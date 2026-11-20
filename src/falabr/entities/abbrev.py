@@ -61,6 +61,9 @@ _ABBREVIATION_LIST: Final[tuple[Abbreviation, ...]] = (
     Abbreviation("cf.", "conforme"),
     Abbreviation("etc.", "etcétera"),
     Abbreviation("obs.", "observação"),
+    # Also present in the shorthand table so sentence splitting protects them.
+    Abbreviation("ex.", "exemplo"),
+    Abbreviation("q.", "que"),
     Abbreviation("aprox.", "aproximadamente"),
     Abbreviation("tel.", "telefone"),
     Abbreviation("ltda.", "limitada"),

@@ -1,4 +1,4 @@
-"""Milestone-2 accounting: at least 300 new hand-written table cases."""
+"""Milestone-2 accounting: new hand-written table cases (total >= 600 in SPEC)."""
 
 from __future__ import annotations
 

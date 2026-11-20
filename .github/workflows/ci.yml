@@ -8,6 +8,12 @@ on:
 permissions:
   contents: read
 
+# UTF-8 everywhere: pt-BR source/golden files are UTF-8 and Windows consoles
+# default to a legacy code page. Golden fixtures are LF via .gitattributes.
+env:
+  PYTHONUTF8: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+
 jobs:
   quality:
     name: Lint and types (ubuntu-latest)
@@ -30,7 +36,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        # "latest available": add new CPython releases here as they ship.
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

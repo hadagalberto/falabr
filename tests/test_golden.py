@@ -16,7 +16,16 @@ import pytest
 from falabr import normalize, normalize_ssml, split_sentences
 
 GOLDEN_DIR: Path = Path(__file__).parent / "golden"
-CATEGORIES: tuple[str, ...] = ("news", "receipts", "recipes", "sports", "finance")
+CATEGORIES: tuple[str, ...] = (
+    "news",
+    "receipts",
+    "recipes",
+    "sports",
+    "finance",
+    "shorthand",
+    "phone",
+    "social",
+)
 
 
 def _load(category: str, suffix: str) -> str:

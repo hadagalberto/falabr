@@ -54,7 +54,7 @@ _CURRENCY_NOUNS: Final[dict[str, tuple[str, str]]] = {
 }
 
 
-def _extract(text: str, options: Options) -> str:
+def _extract(text: str, options: Options, negative: bool = False) -> str:
     lowered = text.lower()
     suffix = ""
     for candidate in sorted(_SCALE_WORDS, key=len, reverse=True):
@@ -67,6 +67,8 @@ def _extract(text: str, options: Options) -> str:
         return text
     raw_amount = amount_match.group()
     amount = decimal_value(raw_amount)
+    if negative:
+        amount = -amount
 
     code = "BRL"
     for key, value in _CURRENCY_CODES.items():
@@ -87,13 +89,16 @@ def _extract(text: str, options: Options) -> str:
 
 
 def _money_handler(match: re.Match[str], ctx: MatchContext) -> str:
-    return _extract(match.group(), ctx.options)
+    raw = match.group()
+    return _extract(raw.lstrip("- ").strip(), ctx.options, negative=raw.lstrip().startswith("-"))
 
 
 MONEY_MATCHERS: Final[tuple[Matcher, ...]] = (
     Matcher(
         "money_symbol",
-        rf"(?:R\$|US\$|€|£)\s*{_AMOUNT}(?:\s*{_SUFFIX})?(?:\s+de)?(?:\s+{_CURRENCY})?\b",
+        # A minus sign directly before the symbol is a negative amount; a
+        # separated dash ("2 kg - R$ 15,90") is a punctuation separator.
+        rf"-?(?:R\$|US\$|€|£)\s*{_AMOUNT}(?:\s*{_SUFFIX})?(?:\s+de)?(?:\s+{_CURRENCY})?\b",
         _money_handler,
     ),
     Matcher(

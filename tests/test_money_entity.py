@@ -68,6 +68,20 @@ def test_money_entity_in_context() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("-R$ 10", "menos dez reais"),
+        ("-R$ 1.234,56", "menos mil duzentos e trinta e quatro reais e cinquenta e seis centavos"),
+        ("-US$ 5", "menos cinco dólares"),
+        ("2 kg - R$ 15,90", "dois quilogramas - quinze reais e noventa centavos"),
+    ],
+)
+def test_negative_money_symbol(source: str, expected: str) -> None:
+    """A minus adjacent to the symbol is negative; a separated dash is punctuation."""
+    assert normalize(source) == expected
+
+
 def test_money_entity_options() -> None:
     options = Options(catorze_style=CatorzeStyle.CATORZE)
     assert normalize_money("R$ 14", options=options) == "catorze reais"

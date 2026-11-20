@@ -186,7 +186,8 @@ DATETIME_MATCHERS: Final[tuple[Matcher, ...]] = (
     Matcher("weekday", rf"(?i:\b(?:{_WEEKDAY_NAMES})\.)", _weekday),
     Matcher(
         "time_of_day",
-        r"\b\d{1,2}(?:h|:)\d{0,2}(?:min)?(?:\s*d[ae]\s*(?:madrugada|manhã|tarde|noite))?\b",
+        # The colon form needs two digits: "14:30" is a time, "2:1" is a score.
+        r"\b\d{1,2}(?:h\d{0,2}|:\d{2})(?:min)?(?:\s*d[ae]\s*(?:madrugada|manhã|tarde|noite))?\b",
         _time,
     ),
     Matcher("short_date", r"\b\d{1,2}/\d{1,2}\b", _short_date),

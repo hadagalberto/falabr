@@ -47,6 +47,21 @@ class EmojiMode(str, Enum):
     DESCRIBE = "describe"
 
 
+class PhoneStyle(str, Enum):
+    """How a phone number is voiced by :func:`falabr.normalize`.
+
+    ``DIGITS`` reads every digit (the legacy grouped-digit style, useful for
+    verification).  ``PAIRS`` groups the subscriber number into two-digit
+    numbers.  ``NATURAL`` (the default) reads the DDD as a number and groups
+    the subscriber the way Brazilians actually say it: ``(11) 98765-4321`` ->
+    "onze, nove, oito sete seis cinco, quatro três dois um".
+    """
+
+    DIGITS = "digits"
+    PAIRS = "pairs"
+    NATURAL = "natural"
+
+
 @dataclass(frozen=True, slots=True)
 class Options:
     """Immutable bundle of normalization options."""
@@ -58,6 +73,7 @@ class Options:
     user_lexicon: Mapping[str, str] = field(default_factory=dict)
     digit_group_separator: str = ","
     roman_context: RomanContext = RomanContext.CARDINAL
+    phone_style: PhoneStyle = PhoneStyle.NATURAL
 
     def __post_init__(self) -> None:
         if not isinstance(self.catorze_style, CatorzeStyle):
@@ -68,6 +84,8 @@ class Options:
             raise TypeError("emoji_mode must be an EmojiMode")
         if not isinstance(self.roman_context, RomanContext):
             raise TypeError("roman_context must be a RomanContext")
+        if not isinstance(self.phone_style, PhoneStyle):
+            raise TypeError("phone_style must be a PhoneStyle")
         for name in ("acronym_overrides", "user_lexicon"):
             value = getattr(self, name)
             if not isinstance(value, Mapping):

@@ -22,6 +22,7 @@ from ._common import (
     MatchContext,
     Matcher,
     compose,
+    group_digits,
     spell_numeric,
 )
 from .abbrev import ABBREVIATION_MATCHERS, ABBREVIATIONS, spell_acronym
@@ -29,6 +30,8 @@ from .datetime import DATETIME_MATCHERS
 from .emoji import EMOJI_MATCHERS
 from .identifiers import IDENTIFIER_MATCHERS
 from .money import MONEY_MATCHERS
+from .ranges import RANGE_MATCHERS, SCORE_MATCHERS
+from .shorthand import SHORTHAND_MATCHERS
 from .symbols import SYMBOL_MATCHERS
 from .units import UNIT_MATCHERS
 from .web import WEB_MATCHERS
@@ -93,10 +96,17 @@ def _dotted_number(match: re.Match[str], ctx: MatchContext) -> str:
     unsigned = raw.lstrip("-")
     sign = "-" if negative else ""
     if "," in unsigned:
-        return spell_numeric(sign + unsigned.replace(".", ""), ctx.options)
-    if re.fullmatch(r"\d{1,3}(?:\.\d{3})+", unsigned):
-        return spell_numeric(raw, ctx.options)
-    return spell_numeric(sign + unsigned.replace(".", ","), ctx.options)
+        candidate = sign + unsigned.replace(".", "")
+    elif re.fullmatch(r"\d{1,3}(?:\.\d{3})+", unsigned):
+        candidate = raw
+    else:
+        candidate = sign + unsigned.replace(".", ",")
+    try:
+        return spell_numeric(candidate, ctx.options)
+    except ValueError:
+        # Multi-group codes such as "1234.5678.9012" are not pt-BR decimals;
+        # read them digit by digit instead of failing the whole normalization.
+        return group_digits(raw, ctx.options.digit_group_separator)
 
 
 _REGNAL_CUES: Final[frozenset[str]] = frozenset(
@@ -123,11 +133,18 @@ _NUMBER_MATCHERS: Final[tuple[Matcher, ...]] = (
 )
 
 _RAW_MATCHERS: Final[tuple[Matcher, ...]] = (
+    # Shorthand expansion runs before web/symbol handling so "p/" does not
+    # become "p barra" and "c/ Ana" does not become "c barra Ana".
+    *SHORTHAND_MATCHERS,
     *EMOJI_MATCHERS,
     *WEB_MATCHERS,
     *MONEY_MATCHERS,
     *IDENTIFIER_MATCHERS,
+    # Ranges precede the decade matcher so "anos 10-20" is one range.
+    *RANGE_MATCHERS,
     *DATETIME_MATCHERS,
+    # After the time matcher: "14:30" is a clock, "2:1" is a score.
+    *SCORE_MATCHERS,
     *_NUMBER_MATCHERS,
     *UNIT_MATCHERS,
     Matcher("dotted_decimal", r"(?<![\w])-?\d+(?:\.\d+)+(?:,\d+)?(?![\w])", _dotted_number),
@@ -150,6 +167,7 @@ _SAY_AS: Final[dict[str, str]] = {
     "cep": "digits",
     "card": "digits",
     "phone": "digits",
+    "protocol": "digits",
     "full_date": "date",
     "iso_date": "date",
     "month_date": "date",

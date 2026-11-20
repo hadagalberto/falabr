@@ -34,6 +34,12 @@ from .entities import (
     normalize_money as normalize_money,
 )
 from .entities import (
+    normalize_ranges as normalize_ranges,
+)
+from .entities import (
+    normalize_shorthand as normalize_shorthand,
+)
+from .entities import (
     normalize_ssml as normalize_ssml,
 )
 from .entities import (
@@ -106,6 +112,9 @@ from .options import (
     Options as Options,
 )
 from .options import (
+    PhoneStyle as PhoneStyle,
+)
+from .options import (
     RomanContext as RomanContext,
 )
 
@@ -119,6 +128,7 @@ __all__ = [
     "Gender",
     "Normalized",
     "Options",
+    "PhoneStyle",
     "RomanContext",
     "Span",
     "describe_emoji",
@@ -129,6 +139,8 @@ __all__ = [
     "normalize_emoji",
     "normalize_identifiers",
     "normalize_money",
+    "normalize_ranges",
+    "normalize_shorthand",
     "normalize_ssml",
     "normalize_symbols",
     "normalize_units",

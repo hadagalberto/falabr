@@ -19,6 +19,8 @@ from .pipeline import (
     normalize_with_spans,
     split_sentences,
 )
+from .ranges import RANGE_MATCHERS, SCORE_MATCHERS, normalize_ranges
+from .shorthand import SHORTHAND_MATCHERS, normalize_shorthand
 from .symbols import SYMBOL_MATCHERS, normalize_symbols
 from .units import UNIT_MATCHERS, normalize_units
 from .web import WEB_MATCHERS, normalize_web, split_camel
@@ -31,6 +33,9 @@ __all__ = [
     "EMOJI_MATCHERS",
     "IDENTIFIER_MATCHERS",
     "MONEY_MATCHERS",
+    "RANGE_MATCHERS",
+    "SCORE_MATCHERS",
+    "SHORTHAND_MATCHERS",
     "SYMBOL_MATCHERS",
     "UNIT_MATCHERS",
     "WEB_MATCHERS",
@@ -44,6 +49,8 @@ __all__ = [
     "normalize_emoji",
     "normalize_identifiers",
     "normalize_money",
+    "normalize_ranges",
+    "normalize_shorthand",
     "normalize_ssml",
     "normalize_symbols",
     "normalize_units",

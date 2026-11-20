@@ -1,1 +1,24 @@
+# Normalize every text file to LF on checkout, so formatters and golden-file
+# tests behave identically on Windows, macOS and Linux.
 * text=auto eol=lf
+
+# Explicit text fixtures (golden files are compared as UTF-8 text).
+tests/golden/*.txt text eol=lf
+*.py text eol=lf
+*.md text eol=lf
+*.toml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Byte-exact assets must never be newline-normalized.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.woff binary
+*.woff2 binary
+*.snap binary

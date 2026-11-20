@@ -125,3 +125,46 @@ def test_parser_defaults() -> None:
     assert args.decimal_mode == "cardinal"
     assert args.emoji_mode == "remove"
     assert args.roman_context == "cardinal"
+    assert args.phone_style == "natural"
+    assert args.digit_group_separator == ","
+    assert args.acronym_override == []
+    assert args.user_lexicon == []
+    assert args.max_chars is None
+
+
+def test_phone_style_option(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["Ligue", "(11)", "91234-5678", "--phone-style", "digits"]) == 0
+    assert (
+        capsys.readouterr().out.strip()
+        == "Ligue um um, nove um dois três quatro, cinco seis sete oito"
+    )
+
+
+def test_digit_group_separator_option(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["CPF", "123.456.789-09", "--digit-group-separator", ";"]) == 0
+    out = capsys.readouterr().out.strip()
+    assert "um dois três; quatro cinco seis; sete oito nove; zero nove" in out
+
+
+def test_user_lexicon_option(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["O", "INSS", "ligou", "--user-lexicon", "INSS=instituto"]) == 0
+    assert capsys.readouterr().out.strip() == "O instituto ligou"
+
+
+def test_acronym_override_option(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["O", "INSS", "ligou", "--acronym-override", "INSS=word"]) == 0
+    assert capsys.readouterr().out.strip() == "O inss ligou"
+
+
+def test_sentences_and_max_chars(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["Um.", "Dois.", "Três.", "--sentences"]) == 0
+    assert capsys.readouterr().out.splitlines() == ["Um.", "Dois.", "Três."]
+    assert main(["abcdef ghij", "--sentences", "--max-chars", "6"]) == 0
+    assert capsys.readouterr().out.splitlines() == ["abcdef", "ghij"]
+
+
+def test_malformed_pair_flag_is_rejected(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit) as exc:
+        main(["texto", "--user-lexicon", "SEM_IGUAL"])
+    assert exc.value.code == 2
+    assert "expects KEY=VALUE" in capsys.readouterr().err

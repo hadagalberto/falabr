@@ -24,6 +24,7 @@ def test_public_exports() -> None:
         "Gender",
         "Normalized",
         "Options",
+        "PhoneStyle",
         "RomanContext",
         "Span",
         "describe_emoji",
@@ -34,6 +35,8 @@ def test_public_exports() -> None:
         "normalize_emoji",
         "normalize_identifiers",
         "normalize_money",
+        "normalize_ranges",
+        "normalize_shorthand",
         "normalize_ssml",
         "normalize_symbols",
         "normalize_units",
@@ -73,7 +76,7 @@ def test_constants() -> None:
 
 
 def test_hand_written_table_case_count() -> None:
-    """SPEC asks for at least 300 hand-written table cases."""
+    """Milestone-1 hand-written table cases (all milestones together: >= 600)."""
     from tests import (
         test_cardinals,
         test_decimals,
