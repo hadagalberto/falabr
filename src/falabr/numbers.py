@@ -23,10 +23,9 @@ from __future__ import annotations
 
 import re
 from decimal import ROUND_HALF_UP, Decimal
-from enum import Enum
 from typing import Final
 
-from .options import CatorzeStyle, DecimalMode, Gender, Options
+from .options import CatorzeStyle, DecimalMode, Gender, Options, RomanContext
 
 MAX_CARDINAL: Final = 10**18 - 1
 
@@ -182,18 +181,6 @@ _ROMAN_SUBTRACTIVE: Final[tuple[tuple[int, str], ...]] = (
     (4, "IV"),
     (1, "I"),
 )
-
-
-class RomanContext(str, Enum):
-    """How a roman numeral is voiced.
-
-    ``REGNAL`` follows the pt-BR convention: popes/kings up to X are ordinals
-    ("Bento XVI" -> "dezesseis" because 16 > 10; "Dom Pedro II" -> "segundo"),
-    while ``CARDINAL`` always uses the cardinal ("século XXI" -> "vinte e um").
-    """
-
-    CARDINAL = "cardinal"
-    REGNAL = "regnal"
 
 
 def _ones_word(value: int, gender: Gender, style: CatorzeStyle) -> str:

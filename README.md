@@ -10,7 +10,11 @@ O **Marco 1** implementa números por extenso (cardinais, ordinais, frações, p
 decimais, dinheiro e numerais romanos) e o analisador reverso `parse_spoken_number`.
 O **Marco 2** adiciona as entidades de texto completo e o pipeline `normalize`: moedas,
 datas/horas, décadas/séculos, unidades, abreviações e siglas, códigos (CPF/CNPJ/CEP/
-telefone/cartão), URLs/e-mails/@handles/#hashtags, símbolos e emojis. Veja `SPEC.md`.
+telefone/cartão), URLs/e-mails/@handles/#hashtags, símbolos e emojis.
+O **Marco 3** liga a CLI a esse mesmo pipeline (texto, `-f`, stdin, `--ssml`, `--json`
+com spans e tipo de entidade), corrige a segmentação de frases e adiciona testes
+golden de parágrafos (notícias, recibos, receitas, esportes, finanças) e o benchmark
+de vazão. Veja `SPEC.md`.
 
 ## Instalação
 
@@ -94,8 +98,10 @@ falabr -f texto.txt --json
 echo "século XXI" | falabr --ssml
 ```
 
-Opções: `--file/-f`, `--json` (spans original→falado), `--ssml`, `--catorze`,
-`--decimal-mode cardinal|digits` e `--roman-context cardinal|regnal`.
+Opções: `--file/-f`, `--json` (spans original→falado, com `start`/`end` no texto
+normalizado, `original`, `spoken` e `kind`), `--ssml`, `--catorze`,
+`--decimal-mode cardinal|digits`, `--emoji-mode remove|describe` e
+`--roman-context cardinal|regnal`.
 
 ## Desenvolvimento
 

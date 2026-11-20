@@ -1,4 +1,8 @@
-"""CLI behaviour: text, file, stdin, JSON spans, SSML and options."""
+"""CLI behaviour: text, file, stdin, JSON spans, SSML, options and full entities.
+
+Since milestone 3 the CLI goes through the same composed pipeline as the API,
+so these vectors also guard that the two surfaces never diverge.
+"""
 
 from __future__ import annotations
 
@@ -14,7 +18,7 @@ from falabr.cli import build_parser, main
 def test_text_argument(capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["comprei", "1.234,56", "reais"]) == 0
     assert capsys.readouterr().out.strip() == (
-        "comprei mil duzentos e trinta e quatro vírgula cinquenta e seis reais"
+        "comprei mil duzentos e trinta e quatro reais e cinquenta e seis centavos"
     )
 
 
@@ -28,28 +32,62 @@ def test_regnal_roman_option(capsys: pytest.CaptureFixture[str]) -> None:
     assert capsys.readouterr().out.strip() == "Dom Pedro segundo"
 
 
+def test_roman_context_option_is_functional(capsys: pytest.CaptureFixture[str]) -> None:
+    """--roman-context regnal forces regnal reading outside the usual cues."""
+    assert main(["IX", "--roman-context", "regnal"]) == 0
+    assert capsys.readouterr().out.strip() == "nono"
+
+
 def test_number_options(capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["14", "3,14", "--catorze", "--decimal-mode", "digits"]) == 0
     assert capsys.readouterr().out.strip() == "catorze três vírgula um quatro"
 
 
+def test_emoji_option(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["Olá", "😀", "--emoji-mode", "describe"]) == 0
+    assert capsys.readouterr().out.strip() == "Olá rosto sorridente"
+
+
 def test_json_spans(capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["total:", "12,5", "reais", "--json"]) == 0
     payload = json.loads(capsys.readouterr().out)
-    assert payload["text"] == "total: doze vírgula cinco reais"
+    assert payload["text"] == "total: doze reais e cinquenta centavos"
     assert payload["spans"] == [
         {
             "start": 7,
-            "end": 11,
-            "original": "12,5",
-            "spoken": "doze vírgula cinco",
+            "end": 38,
+            "original": "12,5 reais",
+            "spoken": "doze reais e cinquenta centavos",
+            "kind": "money_words",
         }
     ]
+    for span in payload["spans"]:
+        assert payload["text"][span["start"] : span["end"]] == span["spoken"]
+
+
+def test_json_spans_multiple_entities(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["Paguei", "R$", "5", "em", "05/03/2026", "--json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["text"] == "Paguei cinco reais em cinco de março de dois mil e vinte e seis"
+    assert [span["kind"] for span in payload["spans"]] == ["money_symbol", "full_date"]
+    for span in payload["spans"]:
+        assert payload["text"][span["start"] : span["end"]] == span["spoken"]
 
 
 def test_ssml_escaping(capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["a", "&", "b", "3", "--ssml"]) == 0
-    assert capsys.readouterr().out.strip() == "<speak>a &amp; b três</speak>"
+    assert capsys.readouterr().out.strip() == (
+        '<speak>a e b <say-as interpret-as="cardinal">três</say-as></speak>'
+    )
+
+
+def test_ssml_uses_pipeline_say_as(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["CPF", "123.456.789-09", "--ssml"]) == 0
+    output = capsys.readouterr().out.strip()
+    assert output.startswith("<speak>")
+    assert '<say-as interpret-as="characters">cê pê efe</say-as>' in output
+    assert '<say-as interpret-as="digits">' in output
+    assert output.endswith("</say-as></speak>")
 
 
 def test_file_input(capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
@@ -65,9 +103,18 @@ def test_stdin_input(capsys: pytest.CaptureFixture[str], monkeypatch: pytest.Mon
     assert capsys.readouterr().out.strip() == "século vinte e um"
 
 
-def test_invalid_roman_token_is_left_untouched(capsys: pytest.CaptureFixture[str]) -> None:
+def test_unknown_uppercase_token_is_spelled(capsys: pytest.CaptureFixture[str]) -> None:
+    """An uppercase token is spelled letter by letter (acronym heuristic)."""
     assert main(["IIII", "e", "5"]) == 0
-    assert capsys.readouterr().out.strip() == "IIII e cinco"
+    assert capsys.readouterr().out.strip() == "i i i i e cinco"
+
+
+def test_full_entities_from_cli(capsys: pytest.CaptureFixture[str]) -> None:
+    """The CLI normalizes every entity class, not only numbers."""
+    assert main(["Acesse", "www.exemplo.com", "ou", "joao@example.com"]) == 0
+    assert capsys.readouterr().out.strip() == (
+        "Acesse w w w ponto exemplo ponto com ou joao arroba example ponto com"
+    )
 
 
 def test_parser_defaults() -> None:
@@ -76,3 +123,5 @@ def test_parser_defaults() -> None:
     assert args.json is False
     assert args.ssml is False
     assert args.decimal_mode == "cardinal"
+    assert args.emoji_mode == "remove"
+    assert args.roman_context == "cardinal"

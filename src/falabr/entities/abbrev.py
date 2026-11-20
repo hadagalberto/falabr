@@ -173,7 +173,7 @@ def spell_acronym(token: str, options: Options | None = None) -> str:
         return override
     if _ROMAN_RE.fullmatch(key):
         try:
-            return spell_roman(key, options=opts)
+            return spell_roman(key, context=opts.roman_context, options=opts)
         except ValueError:
             # e.g. "DDD" is not a canonical roman numeral; it is an acronym.
             pass

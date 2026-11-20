@@ -14,6 +14,18 @@ from typing import Final, Literal
 Gender = Literal["m", "f"]
 
 
+class RomanContext(str, Enum):
+    """How a roman numeral is voiced.
+
+    ``REGNAL`` follows the pt-BR convention: popes/kings up to X are ordinals
+    ("Bento XVI" -> "dezesseis" because 16 > 10; "Dom Pedro II" -> "segundo"),
+    while ``CARDINAL`` always uses the cardinal ("século XXI" -> "vinte e um").
+    """
+
+    CARDINAL = "cardinal"
+    REGNAL = "regnal"
+
+
 class CatorzeStyle(str, Enum):
     """Orthographic variant of the number 14 (both are correct in pt-BR)."""
 
@@ -45,6 +57,7 @@ class Options:
     acronym_overrides: Mapping[str, str] = field(default_factory=dict)
     user_lexicon: Mapping[str, str] = field(default_factory=dict)
     digit_group_separator: str = ","
+    roman_context: RomanContext = RomanContext.CARDINAL
 
     def __post_init__(self) -> None:
         if not isinstance(self.catorze_style, CatorzeStyle):
@@ -53,6 +66,8 @@ class Options:
             raise TypeError("decimal_mode must be a DecimalMode")
         if not isinstance(self.emoji_mode, EmojiMode):
             raise TypeError("emoji_mode must be an EmojiMode")
+        if not isinstance(self.roman_context, RomanContext):
+            raise TypeError("roman_context must be a RomanContext")
         for name in ("acronym_overrides", "user_lexicon"):
             value = getattr(self, name)
             if not isinstance(value, Mapping):

@@ -61,9 +61,6 @@ from .numbers import (
     MAX_CARDINAL as MAX_CARDINAL,
 )
 from .numbers import (
-    RomanContext as RomanContext,
-)
-from .numbers import (
     int_to_roman as int_to_roman,
 )
 from .numbers import (
@@ -107,6 +104,9 @@ from .options import (
 )
 from .options import (
     Options as Options,
+)
+from .options import (
+    RomanContext as RomanContext,
 )
 
 __all__ = [

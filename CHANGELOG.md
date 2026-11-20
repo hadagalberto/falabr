@@ -7,6 +7,11 @@ All notable changes to this project are documented here. Format follows
 
 ### Added
 
+- Milestone 3: the CLI now runs the full composed pipeline (the same code as the
+  Python API), including `--json` spans with entity kinds, SSML `say-as`/breaks,
+  `--emoji-mode` and a functional `--roman-context` flag carried by `Options`.
+  Golden-paragraph tests for news, receipts, recipes, sports and finance plus a
+  throughput benchmark test (generous 20k words/s bound against a 100k target).
 - Milestone 2 entities and the composed `normalize` pipeline: money (symbols, cents,
   mi/bi/mil abbreviations, `de` rule, all four currencies), dates/times in every listed
   format, weekdays, decades and centuries, units with gender/number agreement, an
@@ -20,6 +25,17 @@ All notable changes to this project are documented here. Format follows
   `digit_group_separator`.
 - 345 additional hand-written table cases across the new entity modules, plus pipeline,
   SSML and sentence tests.
+
+### Fixed
+
+- `split_sentences` abbreviation protection: short entries such as `R.` and `n.` no
+  longer match inside ordinary words (`açúcar.`, `min.`), preserving sentence and
+  TTS-chunk boundaries.
+
+### Changed
+
+- `RomanContext` now lives in `falabr.options` with the other configuration enums;
+  it is still re-exported from `falabr` and accepted by `spell_roman`.
 
 ## [0.1.0] — 2026-11-20
 

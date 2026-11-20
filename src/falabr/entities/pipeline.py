@@ -13,12 +13,11 @@ from typing import Final
 from xml.sax.saxutils import escape
 
 from ..numbers import (
-    RomanContext,
     spell_fraction,
     spell_ordinal,
     spell_roman,
 )
-from ..options import Gender, Options
+from ..options import Gender, Options, RomanContext
 from ._common import (
     MatchContext,
     Matcher,
@@ -287,11 +286,12 @@ def split_sentences(text: str, max_chars: int | None = None) -> list[str]:
         raise ValueError("max_chars must be positive")
     protected = re.sub(r"(?<=\d)\.(?=\d)", "\x01", text)
     for written in _ABBREV_PERIODS:
-        if "." in written:
-            pattern = re.escape(written)
-            protected = re.sub(
-                pattern, lambda m: m.group().replace(".", "\x02"), protected, flags=re.IGNORECASE
-            )
+        # Word boundaries keep short abbreviations such as "R." and "n." from
+        # matching the final letters of ordinary words ("açúcar.", "min.").
+        pattern = rf"(?<!\w){re.escape(written)}(?!\w)"
+        protected = re.sub(
+            pattern, lambda m: m.group().replace(".", "\x02"), protected, flags=re.IGNORECASE
+        )
     chunks = re.split(r"(?<=[.!?])\s+|\n+", protected)
     restored = [chunk.replace("\x01", ".").replace("\x02", ".").strip() for chunk in chunks]
     sentences = [chunk for chunk in restored if chunk]
