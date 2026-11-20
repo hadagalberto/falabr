@@ -21,7 +21,8 @@ PIPELINE_CASES: tuple[tuple[str, str], ...] = (
     ("Dom Pedro II", "Dom Pedro segundo"),
     ("Nos anos 90, no século XX", "Nos anos noventa, no século vinte"),
     ("Escreva para joao@example.com", "Escreva para joao arroba example ponto com"),
-    ("Acesse www.exemplo.com", "Acesse w w w ponto exemplo ponto com"),
+    # Corrected from "w w w": the URL finding requires the letter name "dáblio".
+    ("Acesse www.exemplo.com", "Acesse dáblio dáblio dáblio ponto exemplo ponto com"),
     ("#BomDia pessoal", "hashtag bom dia pessoal"),
     ("São 1,5 km até lá", "São um vírgula cinco quilômetros até lá"),
     ("a & b + c", "a e b mais c"),

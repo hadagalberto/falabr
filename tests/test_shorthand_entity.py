@@ -65,7 +65,8 @@ PIPELINE_CASES: tuple[tuple[str, str], ...] = (
     ),
     (
         "acesse www.exemplo.com/p/inicio",
-        "acesse w w w ponto exemplo ponto com barra p barra inicio",
+        # Corrected from "w w w" per the URL finding ("dáblio").
+        "acesse dáblio dáblio dáblio ponto exemplo ponto com barra p barra inicio",
     ),
 )
 

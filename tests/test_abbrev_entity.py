@@ -70,7 +70,8 @@ ACRONYM_CASES: tuple[tuple[str, str], ...] = (
     ("DNA", "dna"),
     ("GPS", "gps"),
     ("HIV", "hiv"),
-    ("IPTU", "iptu"),
+    # Acronym finding: IPTU is spelled, not read as a word (corrected here).
+    ("IPTU", "i pê tê u"),
     ("IPVA", "ipva"),
     ("OK", "ok"),
     ("PIB", "pib"),

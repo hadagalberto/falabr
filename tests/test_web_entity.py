@@ -7,18 +7,21 @@ import pytest
 from falabr import normalize, normalize_web, split_camel
 
 WEB_CASES: tuple[tuple[str, str], ...] = (
+    # URL finding: the scheme is not spoken and "www" uses the CLDR letter
+    # name "dáblio".  These four expectations are corrected from the old
+    # scheme-spelling/"w w w" values, which encoded the bug.
     (
         "https://exemplo.com.br",
-        "h t t p s dois pontos barra barra exemplo ponto com ponto br",
+        "exemplo ponto com ponto br",
     ),
     (
         "http://site.com/a",
-        "h t t p dois pontos barra barra site ponto com barra a",
+        "site ponto com barra a",
     ),
-    ("www.exemplo.com", "w w w ponto exemplo ponto com"),
+    ("www.exemplo.com", "dáblio dáblio dáblio ponto exemplo ponto com"),
     (
         "https://x.com.",
-        "h t t p s dois pontos barra barra x ponto com.",
+        "x ponto com.",
     ),
     ("joao@example.com", "joao arroba example ponto com"),
     ("maria.silva@empresa.com.br", "maria ponto silva arroba empresa ponto com ponto br"),
@@ -63,6 +66,8 @@ def test_split_camel(source: str, expected: str) -> None:
 
 
 def test_web_in_context() -> None:
+    # Corrected from "w w w" per the URL finding (CLDR letter name "dáblio").
     assert normalize("Escreva para joao@example.com ou acesse www.exemplo.com") == (
-        "Escreva para joao arroba example ponto com ou acesse w w w ponto exemplo ponto com"
+        "Escreva para joao arroba example ponto com ou acesse "
+        "dáblio dáblio dáblio ponto exemplo ponto com"
     )

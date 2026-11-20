@@ -160,24 +160,70 @@ _EMOJI_NAMES: Final[dict[str, str]] = {
     "🐦": "pássaro",
     "🐝": "abelha",
     "👨‍👩‍👧": "família",
+    "👩": "mulher",  # ZWJ fallback for professions, e.g. "👩‍💻"
 }
 
 _SKIN_TONES: Final = frozenset("\U0001f3fb\U0001f3fc\U0001f3fd\U0001f3fe\U0001f3ff")
 _ZWJ: Final = "\u200d"
 _VS16: Final = "\ufe0f"
+_KEYCAP: Final = "\u20e3"
+_RI_START: Final = 0x1F1E6
+_RI_END: Final = 0x1F1FF
 
-_EMOJI_CHARS: Final = (
-    "\U0001f000-\U0001faff\u2600-\u27bf\u2b00-\u2bff\u20e3\ufe0f\u200d\u00a9\u00ae\u2122"
-)
-_EMOJI_PATTERN: Final = rf"(?:(?:\d\ufe0f?\u20e3)|(?:[{_EMOJI_CHARS}]+))"
+# CLDR pt_BR names for the flags most often written in Brazilian social text.
+# A regional-indicator pair is decoded to its ISO code and looked up here.
+_FLAG_NAMES: Final[dict[str, str]] = {
+    "BR": "bandeira do Brasil",
+    "US": "bandeira dos Estados Unidos",
+    "PT": "bandeira de Portugal",
+    "AR": "bandeira da Argentina",
+    "GB": "bandeira do Reino Unido",
+    "FR": "bandeira da França",
+    "DE": "bandeira da Alemanha",
+    "IT": "bandeira da Itália",
+    "ES": "bandeira da Espanha",
+    "JP": "bandeira do Japão",
+    "CN": "bandeira da China",
+    "CA": "bandeira do Canadá",
+    "MX": "bandeira do México",
+}
+
+# Match whole grapheme clusters, longest first: a regional-indicator flag, a
+# keycap sequence, a ZWJ sequence (family/profession emoji), then a single base
+# emoji with an optional variation selector and skin-tone modifier.  Adjacent
+# emoji are separate clusters, so "😀🎉" is described as two emoji instead of
+# collapsing into one unknown run.
+_EMOJI_BASE: Final = "\U0001f000-\U0001faff\u2600-\u27bf\u2b00-\u2bff\u00a9\u00ae\u2122"
+_SKIN_CLASS: Final = "[" + "".join(sorted(_SKIN_TONES)) + "]"
+_SINGLE: Final = rf"[{_EMOJI_BASE}](?:{_VS16})?(?:{_SKIN_CLASS})?"
+_FLAG: Final = r"[\U0001f1e6-\U0001f1ff][\U0001f1e6-\U0001f1ff]"
+_KEYCAP_SEQUENCE: Final = rf"\d{_VS16}?{_KEYCAP}"
+_ZWJ_SEQUENCE: Final = rf"{_SINGLE}(?:{_ZWJ}{_SINGLE})+"
+_EMOJI_PATTERN: Final = rf"(?:{_FLAG}|{_KEYCAP_SEQUENCE}|{_ZWJ_SEQUENCE}|{_SINGLE})"
+_EMOJI_CHAR_RE: Final = re.compile(f"[{_EMOJI_BASE}]")
+
+
+def _flag_name(emoji: str) -> str | None:
+    """Decode a pair of regional indicators into its pt-BR flag name."""
+    if len(emoji) != 2 or not all(_RI_START <= ord(char) <= _RI_END for char in emoji):
+        return None
+    code = "".join(chr(ord(char) - _RI_START + ord("A")) for char in emoji)
+    return _FLAG_NAMES.get(code, "bandeira")
 
 
 def describe_emoji(emoji: str) -> str:
     """Return the CLDR-derived pt-BR short name for an emoji cluster."""
     if not isinstance(emoji, str):
         raise TypeError("emoji must be a str")
+    # Adjacent clusters are described one by one, joined with a comma pause.
+    clusters = [match.group() for match in re.finditer(_EMOJI_PATTERN, emoji)]
+    if len(clusters) > 1:
+        return ", ".join(describe_emoji(cluster) for cluster in clusters)
     if emoji in _EMOJI_NAMES:
         return _EMOJI_NAMES[emoji]
+    flag = _flag_name(emoji)
+    if flag is not None:
+        return flag
     without_skin = "".join(char for char in emoji if char not in _SKIN_TONES)
     if without_skin in _EMOJI_NAMES:
         return _EMOJI_NAMES[without_skin]
@@ -194,17 +240,30 @@ def _emoji_handler(match: re.Match[str], ctx: MatchContext) -> str:
     emoji = raw[1:] if had_leading_space else raw
     before = ctx.text[: match.start()]
     after = ctx.text[match.end() :]
-    right = "" if not after or after[0].isspace() or after[0] in "!?,;:.)]”" else " "
+    adjacent_after = bool(after) and _EMOJI_CHAR_RE.match(after[0]) is not None
+    adjacent_before = bool(before) and _EMOJI_CHAR_RE.match(before[-1]) is not None
+    plain_right = "" if not after or after[0].isspace() or after[0] in "!?,;:.)]”" else " "
     if ctx.options.emoji_mode is EmojiMode.REMOVE:
         if had_leading_space:
-            return right
+            return "" if adjacent_after else plain_right
         left = "" if not before or before[-1].isspace() or before[-1] in "([“" else " "
-        return left + right
-    left = (
-        " "
-        if had_leading_space
-        else ("" if not before or before[-1].isspace() or before[-1] in "([“" else " ")
-    )
+        return left + ("" if adjacent_after else plain_right)
+    if had_leading_space:
+        left = " "
+    elif adjacent_before:
+        # The previous cluster already emitted the comma separator.
+        left = ""
+    elif not before or before[-1].isspace() or before[-1] in "([“":
+        left = ""
+    else:
+        left = " "
+    if not after or after[0].isspace() or after[0] in "!?,;:.)]”":
+        right = ""
+    elif adjacent_after:
+        # Adjacent emoji ("😀🎉") are described separately with a comma pause.
+        right = ", "
+    else:
+        right = " "
     return left + describe_emoji(emoji) + right
 
 

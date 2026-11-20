@@ -96,7 +96,9 @@ def test_file_input(capsys: pytest.CaptureFixture[str], tmp_path: Path) -> None:
     source = tmp_path / "texto.txt"
     source.write_text("foram 2.000 pessoas", encoding="utf-8")
     assert main(["-f", str(source)]) == 0
-    assert capsys.readouterr().out.strip() == "foram dois mil pessoas"
+    # Corrected from "dois mil pessoas": the cardinal agrees with the feminine
+    # noun "pessoas" (independent review, gender-agreement finding).
+    assert capsys.readouterr().out.strip() == "foram duas mil pessoas"
 
 
 def test_stdin_input(capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch) -> None:
@@ -114,8 +116,9 @@ def test_unknown_uppercase_token_is_spelled(capsys: pytest.CaptureFixture[str]) 
 def test_full_entities_from_cli(capsys: pytest.CaptureFixture[str]) -> None:
     """The CLI normalizes every entity class, not only numbers."""
     assert main(["Acesse", "www.exemplo.com", "ou", "joao@example.com"]) == 0
+    # Corrected from "w w w": CLDR letter name for W is "dáblio" (URL finding).
     assert capsys.readouterr().out.strip() == (
-        "Acesse w w w ponto exemplo ponto com ou joao arroba example ponto com"
+        "Acesse dáblio dáblio dáblio ponto exemplo ponto com ou joao arroba example ponto com"
     )
 
 

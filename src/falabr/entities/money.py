@@ -82,9 +82,12 @@ def _extract(text: str, options: Options, negative: bool = False) -> str:
     factor, _, plural = _SCALE_WORDS[suffix]
     if amount != amount.to_integral_value():
         # Keep the written scale explicit: "R$ 3,5 bi" -> "três vírgula cinco
-        # bilhões de reais" instead of expanding to full cardinals.
+        # bilhões de reais" instead of expanding to full cardinals.  "mil" is
+        # the exception: it never takes "de" ("R$ 10,5 mil" -> "dez vírgula
+        # cinco mil reais"); only milhão/bilhão/... do.
         _, currency_plural = _CURRENCY_NOUNS[code]
-        return f"{spell_number(amount, options=options)} {plural} de {currency_plural}"
+        connector = "" if factor == 10**3 else "de "
+        return f"{spell_number(amount, options=options)} {plural} {connector}{currency_plural}"
     return spell_money(amount * factor, currency=code, options=options)
 
 

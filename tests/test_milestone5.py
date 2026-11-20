@@ -2,7 +2,8 @@
 
 Three fixes are pinned here with hand-written table/golden vectors:
 
-* a bare ``dd/mm`` / ``d/m`` pair is a date when valid, not a fraction;
+* a ``dd/mm`` / ``d/m`` pair is a date only with date context (later review
+  corrected the earlier "always a date when valid" rule);
 * SSML never wraps already-spoken words in ``<say-as>`` (two explicit modes);
 * a fraction before a measure noun takes agreement/preposition rules.
 
@@ -22,16 +23,20 @@ from falabr import (
     normalize_with_spans,
 )
 
-# --- Finding 4: valid day/month reads as a date, invalid falls back -----------
+# --- Finding 4: day/month is a date only in date context ---------------------
+# Independent review corrected the original rule: a bare valid d/m pair is a
+# fraction ("3/4" -> "três quartos").  "até", "dia", "data" and a following year
+# keep the calendar reading.  The five bare expectations below are corrected
+# here (they used to encode the bug) per the review-fix hard rules.
 
 DATE_VS_FRACTION_CASES: tuple[tuple[str, str], ...] = (
     ("até 31/12!", "até trinta e um de dezembro!"),
-    ("31/12", "trinta e um de dezembro"),
-    ("1/2", "um de fevereiro"),
-    ("3/4", "três de abril"),
-    ("12/10", "doze de outubro"),
-    ("5/3", "cinco de março"),
-    ("05/03", "cinco de março"),
+    ("31/12", "trinta e um doze avos"),
+    ("1/2", "um meio"),
+    ("3/4", "três quartos"),
+    ("12/10", "doze décimos"),
+    ("5/3", "cinco terços"),
+    ("05/03", "cinco terços"),
     ("dia 5/3", "dia cinco de março"),
     ("data 12/10", "data doze de outubro"),
     ("32/12", "trinta e dois doze avos"),  # invalid day -> fraction

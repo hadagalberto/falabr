@@ -14,9 +14,9 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Final
 
-from ..numbers import spell_roman
+from ..numbers import spell_number, spell_roman
 from ..options import Options
-from ._common import MatchContext, Matcher, apply_matchers, compose
+from ._common import MatchContext, Matcher, apply_matchers, compose, digit_word
 
 __all__ = [
     "ABBREVIATIONS",
@@ -38,6 +38,7 @@ class Abbreviation:
 
 
 _ABBREVIATION_LIST: Final[tuple[Abbreviation, ...]] = (
+    Abbreviation("D.", "Dom"),
     Abbreviation("Dr.", "doutor"),
     Abbreviation("Dra.", "doutora"),
     Abbreviation("Dras.", "doutoras"),
@@ -69,6 +70,12 @@ _ABBREVIATION_LIST: Final[tuple[Abbreviation, ...]] = (
     Abbreviation("ltda.", "limitada"),
     Abbreviation("S.A.", "sociedade anônima"),
     Abbreviation("s.a.", "sociedade anônima"),
+    # "apto." before a number is "apartamento"; elsewhere it is the adjective
+    # "apto" and must be preserved ("Ele está apto. Sim.").
+    Abbreviation("apto.", "apto.", followed_by_number="apartamento"),
+    Abbreviation("Apto.", "apto.", followed_by_number="apartamento"),
+    Abbreviation("Sto.", "Santo"),
+    Abbreviation("sta.", "Santa"),
     Abbreviation("pág.", "página"),
     Abbreviation("págs.", "páginas"),
     Abbreviation("p.", "por", followed_by_number="página"),
@@ -132,16 +139,21 @@ _WORD_ACRONYMS: Final[frozenset[str]] = frozenset(
         "DNA",
         "GPS",
         "HIV",
-        "IPTU",
         "IPVA",
         "OK",
         "PIB",
         "CNH",
+        # Curated initialisms that Brazilians pronounce as words.
+        "ONU",
+        "OTAN",
+        "MEC",
+        "COVID",
     }
 )
 
 _SPELL_ACRONYMS: Final[frozenset[str]] = frozenset(
     {
+        "IPTU",  # spelled "i pê tê u" (not a word-acronym)
         "INSS",
         "CPF",
         "CNPJ",
@@ -216,7 +228,30 @@ def _acronym_handler(match: re.Match[str], ctx: MatchContext) -> str:
     return spell_acronym(match.group(), ctx.options)
 
 
+_ACRONYM_NUMBER_PATTERN: Final = r"\b(?P<an_acronym>[A-Z]{2,8})-(?P<an_number>\d{1,6})\b"
+
+
+def _acronym_number_handler(match: re.Match[str], ctx: MatchContext) -> str:
+    acronym = match.group("an_acronym")
+    number = match.group("an_number")
+    return f"{spell_acronym(acronym, ctx.options)} {spell_number(number, options=ctx.options)}"
+
+
+# Codes such as "AZ1234" are read as letters followed by digit-by-digit
+# digits (the same grouping convention used for CPF/CEP in identifiers.py).
+_ALPHANUMERIC_PATTERN: Final = r"\b(?P<ac_letters>[A-Z]{2,8})(?P<ac_digits>\d{1,8})\b"
+
+
+def _alphanumeric_handler(match: re.Match[str], ctx: MatchContext) -> str:
+    letters, digits = match.group("ac_letters", "ac_digits")
+    spoken_letters = [_LETTER_NAMES[char] for char in letters if char in _LETTER_NAMES]
+    spoken_digits = [digit_word(int(char)) for char in digits]
+    return " ".join([*spoken_letters, *spoken_digits])
+
+
 ABBREVIATION_MATCHERS: Final[tuple[Matcher, ...]] = (
+    Matcher("acronym_number", _ACRONYM_NUMBER_PATTERN, _acronym_number_handler),
+    Matcher("alphanumeric_code", _ALPHANUMERIC_PATTERN, _alphanumeric_handler),
     Matcher(
         "abbreviation",
         rf"(?<!\w)(?i:{_ABBREVIATION_PATTERN})(?!\w)",

@@ -12,6 +12,10 @@ __all__ = ["WEB_MATCHERS", "normalize_web", "split_camel"]
 
 _TRAILING: Final = ".,;:!?"
 
+# "dáblio" is the pt-BR letter name for W (ABL/VOLP), so "www" is read as
+# "dáblio dáblio dáblio" rather than the English "w w w".
+_WWW_SPOKEN: Final = "dáblio dáblio dáblio"
+
 
 def split_camel(token: str) -> str:
     """Split camelCase/PascalCase identifiers into lowercase words."""
@@ -26,11 +30,12 @@ def _url_handler(match: re.Match[str], ctx: MatchContext) -> str:
     while raw and raw[-1] in _TRAILING:
         trailing = raw[-1] + trailing
         raw = raw[:-1]
-    if raw.lower().startswith("http"):
-        scheme, _, rest = raw.partition("://")
-        spoken = " ".join(scheme.lower()) + " dois pontos barra barra " + rest
-    else:  # www.
-        spoken = "w w w ponto " + raw[4:]
+    if raw.lower().startswith(("http://", "https://")):
+        # The scheme is a machine detail; a narrator reads the domain only.
+        _, _, rest = raw.partition("://")
+        spoken = f"{_WWW_SPOKEN} ponto {rest[4:]}" if rest.lower().startswith("www.") else rest
+    else:  # raw starts with "www."
+        spoken = f"{_WWW_SPOKEN} ponto {raw[4:]}"
     replacements = {
         ".": " ponto ",
         "/": " barra ",

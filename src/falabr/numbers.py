@@ -246,6 +246,18 @@ def _render_group(scale: int, value: int, gender: Gender, style: CatorzeStyle) -
     raise AssertionError("unreachable scale")  # pragma: no cover
 
 
+def ends_at_major_scale(number: int) -> bool:
+    """True when a cardinal ends *exactly* at a milhão/bilhão/... scale.
+
+    This is the grammatical condition for the preposition ``de`` before a
+    counted noun or currency ("um milhão de pessoas", "dois bilhões de reais").
+    ``mil`` is deliberately excluded: "dez mil reais", never "dez mil de reais".
+    Cents do not change the condition — "um milhão de reais e um centavo".
+    """
+    groups = _groups(number)
+    return len(groups) == 1 and groups[0][0] >= 10**6
+
+
 def _is_linkable(value: int) -> bool:
     """Values that take the connective ``e`` after a scale word.
 
@@ -479,12 +491,15 @@ def spell_money(
     cents = int((rounded - integer) * 100)
 
     singular, plural = _CURRENCIES[code]
-    groups = _groups(integer)
-    ends_at_scale = len(groups) == 1 and groups[0][0] >= 10**6
+    ends_at_scale = ends_at_major_scale(integer)
 
     if integer == 0:
         core = ""
-    elif ends_at_scale and cents == 0:
+    elif ends_at_scale:
+        # The preposition belongs to the exact scale word, not to the absence
+        # of cents: "R$ 2.000.000,50" is "dois milhões de reais e cinquenta
+        # centavos" (ABL/VOLP usage of "real").  Restricting it to cents == 0
+        # dropped the "de" whenever a scale amount had a fractional part.
         core = f"{spell_cardinal(integer, catorze_style=opts.catorze_style)} de {plural}"
     else:
         noun = singular if integer == 1 else plural

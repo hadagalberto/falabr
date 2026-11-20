@@ -129,7 +129,46 @@ def _phone_handler(match: re.Match[str], ctx: MatchContext) -> str:
     return ", ".join(spoken)
 
 
+# Toll-free/service numbers ("0800 123 4567", "0300 ...") are written with
+# spaces instead of the hyphen of an ordinary phone number.  The service prefix
+# is voiced "zero oitocentos"/"zero trezentos" (zero + the cardinal of the
+# remaining digits); the subscriber groups are read digit by digit.
+_SERVICE_PREFIXES: Final[tuple[str, ...]] = (
+    "0800",
+    "0300",
+    "4004",
+    "4007",
+    "4003",
+    "3003",
+    "4002",
+    "4020",
+)
+
+
+def _service_phone_handler(match: re.Match[str], ctx: MatchContext) -> str:
+    prefix, middle, last = match.group("svc_prefix", "svc_mid", "svc_last")
+    if prefix.startswith("0"):
+        head = f"zero {spell_cardinal(int(prefix[1:]), catorze_style=ctx.options.catorze_style)}"
+    else:
+        # A non-zero service prefix is announced as a full cardinal
+        # ("4004" -> "quatro mil e quatro").
+        head = spell_cardinal(int(prefix), catorze_style=ctx.options.catorze_style)
+    groups = [head]
+    if middle:
+        groups.append(_read_digits(middle))
+    groups.append(_read_digits(last))
+    return ", ".join(groups)
+
+
+_SERVICE_PHONE_PATTERN: Final = (
+    r"(?<!\w)(?P<svc_prefix>"
+    + "|".join(_SERVICE_PREFIXES)
+    + r")\s+(?:(?P<svc_mid>\d{3})\s+)?(?P<svc_last>\d{4})(?!\w)"
+)
+
+
 IDENTIFIER_MATCHERS: Final[tuple[Matcher, ...]] = (
+    Matcher("phone_service", _SERVICE_PHONE_PATTERN, _service_phone_handler),
     Matcher("cnpj", r"(?<!\w)\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}(?!\w)", _digits_handler),
     Matcher("cpf", r"(?<!\w)\d{3}\.\d{3}\.\d{3}-\d{2}(?!\w)", _digits_handler),
     Matcher("card", r"(?<!\w)\d{4}(?:[ -]\d{4}){3}(?!\w)", _digits_handler),

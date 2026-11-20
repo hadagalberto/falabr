@@ -16,15 +16,18 @@ DATE_CASES: tuple[tuple[str, str], ...] = (
     ("5 de Março de 2026", "cinco de março de dois mil e vinte e seis"),
     ("1 de janeiro", "um de janeiro"),
     ("25 de dezembro de 2025", "vinte e cinco de dezembro de dois mil e vinte e cinco"),
-    ("05/03", "cinco de março"),
+    # A bare d/m pair is a FRACTION, not a date: independent review finding 4
+    # corrected the milestone-5 rule that read every valid pair as a date.
+    # Only a date cue ("dia", "data", "em", "até", weekday) or a following year
+    # triggers the calendar reading.
+    ("05/03", "cinco terços"),
     ("dia 5/3", "dia cinco de março"),
     ("data 5/3", "data cinco de março"),
-    # A bare d/m pair is read as a date whenever it is valid (milestone 5).
-    ("31/12", "trinta e um de dezembro"),
-    ("1/2", "um de fevereiro"),
-    ("3/4", "três de abril"),
-    ("12/10", "doze de outubro"),
-    ("5/3", "cinco de março"),
+    ("31/12", "trinta e um doze avos"),
+    ("1/2", "um meio"),
+    ("3/4", "três quartos"),
+    ("12/10", "doze décimos"),
+    ("5/3", "cinco terços"),
 )
 
 TIME_CASES: tuple[tuple[str, str], ...] = (
