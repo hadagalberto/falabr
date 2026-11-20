@@ -64,11 +64,11 @@ _MONTH_NAMES: Final = "|".join(
 )
 _WEEKDAY_NAMES: Final = "|".join(sorted(_WEEKDAYS, key=len, reverse=True))
 
-# "3/4 de ...", "1/4 do ..." and "5/12 da ..." are quantity cues, not dates.
-# A following year or part of day ("de 2026", "da manhã") is excluded: those
-# belong to a date phrase.
+# "3/4 de ...", "1/4 do ...", "1/4 dos ..." and "5/12 da ..." are quantity
+# cues, not dates.  A following year or part of day ("de 2026", "da manhã") is
+# excluded: those belong to a date phrase.
 _FRACTION_PREP_RE: Final = re.compile(
-    r"\s+(?:de|do|da)\s+(?!(?:\d{4}|manhã|tarde|noite|madrugada)\b)(?=[^\W\d_])",
+    r"\s+(?:dos|das|de|do|da)\s+(?!(?:\d{4}|manhã|tarde|noite|madrugada)\b)(?=[^\W\d_])",
     re.IGNORECASE,
 )
 
@@ -137,7 +137,9 @@ def _valid(day: int, month: int, year: int | None = None) -> bool:
     if not 1 <= month <= 12:
         return False
     limit = _MONTH_DAYS[month - 1]
-    if month == 2 and year is not None and (year % 400 == 0 or (year % 4 == 0 and year % 100 != 0)):
+    if month == 2 and (year is None or year % 400 == 0 or (year % 4 == 0 and year % 100 != 0)):
+        # No year -> use the leap reference (29 Feb is a real calendar day);
+        # with a year the Gregorian rule decides.  This matches the docstring.
         limit = 29
     return 1 <= day <= limit
 
@@ -212,26 +214,32 @@ def _short_date(match: re.Match[str], ctx: MatchContext) -> str:
     year_cue = _YEAR_AFTER_RE.match(after) is not None
     fraction_cue = _FRACTION_PREP_RE.match(after) is not None
     valid = _valid(day, month)
+
+    # A partitive "do/da/dos/das/de + noun" marks a quantity, not a date:
+    # "1/4 do valor" -> "um quarto do valor".  A following measure noun is
+    # consumed even earlier by the measure_fraction matcher.
     if fraction_cue and 2 <= month <= 12:
-        # "1/4 do valor", "5/12 da pizza": the preposition + noun marks a
-        # quantity.  Known measure nouns are consumed even earlier by the
-        # measure_fraction matcher.
         return spell_fraction(day, month)
+
+    # SPEC.md: a VALID bare d/m pair is a date by default.  No surrounding date
+    # cue is required — that rule was inverted by a57e3a1, which turned every
+    # valid pair into a fraction.  An ordinal day marker ("1º/9") keeps its
+    # ordinal reading inside the date phrase.
+    if valid:
+        if ordinal_gender is not None:
+            return _date_words_from(
+                spell_ordinal(day, gender=ordinal_gender), month, None, ctx.options
+            )
+        return _date_words(day, month, None, ctx.options)
+
+    # Impossible as a calendar date (31/02, 32/12, 31/13): never voice an
+    # impossible date such as "trinta e um de fevereiro".
     if date_cue or year_cue or ordinal_gender is not None:
-        # Only a real calendar date with an explicit date cue ("dia", "em",
-        # "até", a weekday), a following year or an ordinal day marker is voiced
-        # as a date.  An impossible pair such as "Dia 31/02" must never become
-        # "... de fevereiro": preserve the token instead.
-        if valid:
-            if ordinal_gender is not None:
-                return _date_words_from(
-                    spell_ordinal(day, gender=ordinal_gender), month, None, ctx.options
-                )
-            return _date_words(day, month, None, ctx.options)
+        # An explicit date cue means a date was intended; preserve the token
+        # rather than silently turning it into a fraction.
         return raw
-    # A bare d/m pair has no date context, so it is a fraction ("3/4" ->
-    # "três quartos"), not "três de abril" (independent review finding 4).
     if 2 <= month <= 12:
+        # Bare, calendar-invalid pair: fall back to the fraction reading.
         return spell_fraction(day, month)
     return raw
 

@@ -14,10 +14,10 @@ Grammar authorities / reasoning used for the expected values:
   Cunha & Cintra.  The preposition depends on the INTEGER part ending exactly
   at the scale, not on whether there are cents: "um milhão de reais e um
   centavo".  It does not appear after ``mil`` ("dez mil reais").
-* Fractions before ``do/da/de`` + noun are quantifiers, not dates; a d/m pair
-  with no date cue is a fraction.  Real calendar dates only (29/02 allowed via
-  a leap reference year; 31/02 impossible).  Sources: Cunha & Cintra,
-  "Numerais fracionários"; SPEC.md date/fraction clause.
+* Fractions before ``do/da/dos/das/de`` + noun are quantifiers, not dates;
+  per SPEC.md a VALID bare d/m pair is a date by default.  Real calendar dates
+  only (29/02 allowed via a leap reference year; 31/02 impossible).  Sources:
+  Cunha & Cintra, "Numerais fracionários"; SPEC.md date/fraction clause.
 * Regnal numerals: pt-BR convention — ordinal through X, cardinal after
   (SPEC.md, "Roman numerals in regnal/century contexts"); feminine ordinal for
   female names.
@@ -110,8 +110,11 @@ DATE_FRACTION_CASES: tuple[tuple[str, str], ...] = (
     ("até 31/12", "até trinta e um de dezembro"),  # "até" is a date cue
     ("segunda-feira 5/3", "segunda-feira cinco de março"),  # weekday cue
     ("5/3 de 2026", "cinco de março de dois mil e vinte e seis"),  # year cue
-    ("3/4", "três quartos"),  # bare pair: fraction, not a date
-    ("31/12", "trinta e um doze avos"),  # bare pair: fraction
+    # Corrected in milestone 7: a57e3a1 inverted SPEC.md's date rule and had
+    # rewritten these valid bare pairs to fractions ("três quartos", "... doze
+    # avos").  A valid bare d/m is a date; only partitives above are fractions.
+    ("3/4", "três de abril"),
+    ("31/12", "trinta e um de dezembro"),
 )
 
 

@@ -9,7 +9,8 @@ Finding map (see docs/REVIEW-FIXES.md for the final report):
 * HIGH-1 gender agreement for numbers before a noun.
 * HIGH-2 money "de reais" before an exact milhão/bilhão with cents.
 * MED-3 "de" after milhão/bilhão before any noun; "mil" never takes "de".
-* MED-4 d/m: fraction cues ("do/da/de" + noun), date cues and real-calendar
+* MED-4 d/m: partitive cues ("do/da/dos/das/de" + noun) make a fraction; a
+  valid bare pair is a date (SPEC.md, restored in milestone 7), with real-calendar
   validation; ordinal day markers in dates.
 * MED-5 regnal numerals after any capitalized name, feminine ordinals for
   female names, single-letter numerals (I, V, X).
@@ -148,26 +149,27 @@ SCALE_DE_CASES: tuple[tuple[str, str], ...] = (
 # MED-4: d/m disambiguation and real-calendar validation.
 #
 # "1/4 do valor" is a fraction: the quantifier "do + noun" attaches to the
-# fraction (Cunha & Cintra, numerais fracionários).  A cued or bare valid
-# calendar date is a date; an impossible date ("Dia 31/02" — February never
-# has 31 days) must not be voiced as a date.
+# fraction (Cunha & Cintra, numerais fracionários).  Per SPEC.md a VALID bare
+# calendar date is a date by default; only an impossible date ("Dia 31/02" —
+# February never has 31 days) must not be voiced as a date.
 # ---------------------------------------------------------------------------
 FRACTION_VS_DATE_CASES: tuple[tuple[str, str], ...] = (
     ("Recebeu 1/4 do valor", "Recebeu um quarto do valor"),
     ("Comeu 5/12 da pizza", "Comeu cinco doze avos da pizza"),
     ("Ganhou 2/3 do prêmio", "Ganhou dois terços do prêmio"),
     ("Ficou com 3/4 da herança", "Ficou com três quartos da herança"),
-    # Corrected per the review finding: a BARE d/m pair is a fraction, not a
-    # date.  Date cues ("dia", "em", "até", weekday) or a following year keep
-    # the calendar reading.  The two bare expectations below used to encode
-    # the bug ("1 de fevereiro", "3 de abril").
-    ("1/2", "um meio"),
-    ("3/4", "três quartos"),
+    # Corrected in milestone 7: a57e3a1 had inverted SPEC.md's date rule and
+    # rewritten these to fractions ("um meio", "três quartos").  A valid bare
+    # pair is a date; a partitive cue above is what makes a pair a fraction.
+    ("1/2", "um de fevereiro"),
+    ("3/4", "três de abril"),
     ("dia 5/3", "dia cinco de março"),
     ("em 12/10", "em doze de outubro"),
     ("Válido até 31/12", "Válido até trinta e um de dezembro"),
     ("segunda 5/3", "segunda cinco de março"),
-    ("29/02", "vinte e nove meios"),  # bare pair: fraction, not a date
+    # 29 February is a real date; without a year the leap reference applies
+    # (as _valid's docstring specifies), so this is a date, not a fraction.
+    ("29/02", "vinte e nove de fevereiro"),
     ("29/02/2024", "vinte e nove de fevereiro de dois mil e vinte e quatro"),
     # Impossible calendar dates.
     ("Dia 31/02", "Dia 31/02"),

@@ -1,4 +1,35 @@
-# Independent review — fix report (milestone 6)
+# Independent review — fix reports
+
+## Milestone 7 — restore the SPEC bare-date rule (a57e3a1 regression)
+
+The previous fix milestone inverted SPEC.md's rule ("A valid bare `dd/mm`/`d/m`
+is read as a date") and rewrote existing date expectations to fractions.  Each
+item below was first reproduced with a failing regression test carrying a
+hand-derived expected value (source/reasoning in `tests/test_milestone7.py`),
+then fixed at the root cause in `entities/datetime.py`.  No test was deleted,
+skipped or loosened: the assertions that encoded the bug were corrected in
+place with a comment citing SPEC.md, and all fraction-context tests were kept.
+
+| Item | Regression test name | Fix summary | Status |
+| --- | --- | --- | --- |
+| Bare valid `d/m` read as a fraction instead of a date (`31/12`, `05/03`, `5/3`, `a partir de 12/10`, `1/2`, `3/4`, `12/10`) | `test_valid_bare_day_month_is_a_date` (`tests/test_milestone7.py`); restored expectations in `test_datetime_entity`, `test_valid_day_month_is_a_date`, `test_fraction_versus_date`, `test_date_fraction_disambiguation` | `_short_date` now returns a date for every calendar-valid pair by default; the a57e3a1 "bare pair = fraction" branch is gone.  Date cues/years remain harmless confirmation. | Fixed |
+| Partitive cue must include plural `dos`/`das` | `test_fraction_contexts_are_not_dates` | Extended `_FRACTION_PREP_RE` from `de/do/da` to `dos/das/de/do/da`; `1/4 dos lucros` and `2/3 das vendas` stay fractions. | Fixed |
+| Impossible dates must never be spoken (`31/02` not "trinta e um de fevereiro") | `test_invalid_day_month_never_becomes_a_date` | Kept real-calendar validation: invalid pairs fall back to a fraction reading, and with a date cue the token is preserved verbatim. | Fixed |
+| `_valid()` contradicted its docstring for bare 29 February | `test_leap_day_validation_with_year`, `test_valid_bare_day_month_is_a_date[29/02...]` | Without a year the leap reference now applies (29 Feb accepted), matching the documented intent; with a year the Gregorian rule still decides. | Fixed |
+| Keep the a57e3a1 fraction-context tests green | `test_fraction_contexts_are_not_dates` | `Recebeu 1/4 do valor`, `5/12 da pizza`, `1/2 xícara`, `1/3 xícara` all still produce fractions. | Verified |
+| Held findings: gender, money, partitive fraction, regnal numeral, service phone | `test_held_findings_still_hold` | `1 filha`, `200 pessoas`, `R$ 2.000.000,50`, `Recebeu 1/4 do valor`, `Henrique VIII`, `0800 123 4567` all unchanged. | Verified |
+| Emoji describe mode describes each emoji | `test_emoji_describe_mode` | `😀🎉` → "rosto sorridente, festa"; `🇧🇷` → "bandeira do Brasil".  No change needed. | Verified |
+| Golden snapshots that lock in the bug | `test_golden` (full suite) | None: golden inputs only contain cued (`em 05/03`) or full (`05/03/2026`) dates, so no snapshot encoded the bare-fraction bug and none needed regenerating. | Verified |
+
+Verification: `pytest -q` → **1270 passed**; `ruff check .` clean; `ruff format
+--check .` clean (55 files); `mypy` clean (49 files); `coverage report` → **97 %**
+(fail_under = 95); `python -m build` → sdist + wheel built cleanly.
+
+No push, publish, `gh`, `twine` or remote operation was performed.
+
+---
+
+## Milestone 6 — original review
 
 All findings from the attached review were reproduced with failing tests first
 (hand-derived expected values, sources/reasoning in test comments), then fixed

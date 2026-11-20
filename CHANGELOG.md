@@ -70,9 +70,16 @@ All notable changes to this project are documented here. Format follows
 
 ### Fixed
 
-- Bare `dd/mm`/`d/m` pairs are read as dates whenever valid (day 1–31, month 1–12):
+- Restored the SPEC bare-date rule after a regression: a calendar-valid `d/m` pair
+  is a date by default again (`31/12` → "trinta e um de dezembro", `1/2` →
+  "um de fevereiro").  Only a partitive `do/da/dos/das/de + noun` or a measure
+  noun makes it a fraction.  Impossible dates such as `31/02` still fall back to
+  a fraction/preserved token, never an impossible spoken date.  Plural partitives
+  (`dos`/`das`) are now recognised, and bare 29 February uses the leap reference
+  documented by `_valid`.
+- Bare `dd/mm`/`d/m` pairs are read as dates whenever calendar-valid:
   `até 31/12!` → "até trinta e um de dezembro!" instead of "trinta e um doze avos".
-  Measure contexts are excluded from this rule.
+  Measure and partitive contexts are excluded from this rule.
 - Fractions before a noun no longer produce "um meio xícara"; `1/2` uses the agreeing
   "meia"/"meio" and the other fractions take the "de" preposition.
 - Phone parsing uses the written separators instead of a flat digit string, so 10-digit
