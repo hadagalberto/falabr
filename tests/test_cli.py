@@ -23,8 +23,11 @@ def test_text_argument(capsys: pytest.CaptureFixture[str]) -> None:
 
 
 def test_fraction_ordinal_and_roman(capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["3/4", "3º", "1ª", "século", "XXI"]) == 0
-    assert capsys.readouterr().out.strip() == ("três quartos terceiro primeira século vinte e um")
+    # A fraction followed by a measure noun keeps its fraction reading.
+    assert main(["3/4", "de", "xícara", "3º", "1ª", "século", "XXI"]) == 0
+    assert capsys.readouterr().out.strip() == (
+        "três quartos de xícara terceiro primeira século vinte e um"
+    )
 
 
 def test_regnal_roman_option(capsys: pytest.CaptureFixture[str]) -> None:
@@ -76,17 +79,16 @@ def test_json_spans_multiple_entities(capsys: pytest.CaptureFixture[str]) -> Non
 
 def test_ssml_escaping(capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["a", "&", "b", "3", "--ssml"]) == 0
-    assert capsys.readouterr().out.strip() == (
-        '<speak>a e b <say-as interpret-as="cardinal">três</say-as></speak>'
-    )
+    # Default mode emits already-spoken words, never say-as around them.
+    assert capsys.readouterr().out.strip() == "<speak>a e b três</speak>"
 
 
 def test_ssml_uses_pipeline_say_as(capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["CPF", "123.456.789-09", "--ssml"]) == 0
+    assert main(["CPF", "123.456.789-09", "--ssml", "--ssml-mode", "say-as"]) == 0
     output = capsys.readouterr().out.strip()
     assert output.startswith("<speak>")
-    assert '<say-as interpret-as="characters">cê pê efe</say-as>' in output
-    assert '<say-as interpret-as="digits">' in output
+    assert '<say-as interpret-as="characters">CPF</say-as>' in output
+    assert '<say-as interpret-as="digits">123.456.789-09</say-as>' in output
     assert output.endswith("</say-as></speak>")
 
 
@@ -126,6 +128,7 @@ def test_parser_defaults() -> None:
     assert args.emoji_mode == "remove"
     assert args.roman_context == "cardinal"
     assert args.phone_style == "natural"
+    assert args.ssml_mode == "normalized"
     assert args.digit_group_separator == ","
     assert args.acronym_override == []
     assert args.user_lexicon == []

@@ -24,7 +24,7 @@ python -m pip install .
 ## Uso rápido
 
 ```python
-from falabr import Options, PhoneStyle, normalize, normalize_ssml
+from falabr import Options, PhoneStyle, SsmlMode, normalize, normalize_ssml
 
 normalize("R$ 1.234,56")
 # 'mil duzentos e trinta e quatro reais e cinquenta e seis centavos'
@@ -36,7 +36,10 @@ normalize("(11) 98765-4321", Options(phone_style=PhoneStyle.NATURAL))
 # 'onze, nove, oito sete seis cinco, quatro três dois um'
 
 normalize_ssml("R$ 10")
-# '<speak><say-as interpret-as="currency">dez reais</say-as></speak>'
+# '<speak>dez reais</speak>'  (padrão: palavras já faladas, sem <say-as>)
+
+normalize_ssml("R$ 10", Options(ssml_mode=SsmlMode.SAY_AS))
+# '<speak><say-as interpret-as="currency">R$ 10</say-as></speak>'
 ```
 
 ## Antes / depois — exemplos por categoria
@@ -57,9 +60,12 @@ Cada linha foi verificada com os testes golden/table-driven do repositório.
 | `14` com `catorze_style=catorze` | `catorze` |
 | `21º` | `vigésimo primeiro` |
 | `1000ª` | `milésima` |
-| `3/4` | `três quartos` |
-| `1/3` | `um terço` |
-| `5/12` | `cinco doze avos` |
+| `spell_fraction(3, 4)` | `três quartos` |
+| `spell_fraction(1, 3)` | `um terço` |
+| `spell_fraction(5, 12)` | `cinco doze avos` |
+| `normalize("3/4")` | `três de abril` |
+| `normalize("1/2 xícara")` | `meia xícara` |
+| `normalize("3/4 de xícara")` | `três quartos de xícara` |
 | `12,5%` | `doze vírgula cinco por cento` |
 
 ```python
@@ -114,6 +120,9 @@ estão no cabeçalho de `src/falabr/numbers.py`.
 | Entrada | Saída |
 | --- | --- |
 | `05/03/2026` | `cinco de março de dois mil e vinte e seis` |
+| `31/12` | `trinta e um de dezembro` |
+| `1/2` | `um de fevereiro` |
+| `12/10` | `doze de outubro` |
 | `2026-03-05` | `cinco de março de dois mil e vinte e seis` |
 | `5 de mar.` | `cinco de março` |
 | `14h30` | `quatorze horas e trinta minutos` |
@@ -123,6 +132,12 @@ estão no cabeçalho de `src/falabr/numbers.py`.
 | `século XXI` | `século vinte e um` |
 | `Dom Pedro II` | `Dom Pedro segundo` |
 | `anos 90` | `anos noventa` |
+
+`dd/mm` e `d/m` são lidos como data sempre que formam uma data válida (dia 1–31,
+mês 1–12). Para forçar a leitura de fração em contexto de receita/medida, use um
+substantivo de medida depois da fração: `1/2 xícara` → `meia xícara`,
+`1/3 de xícara` → `um terço de xícara`, `3/4 xícara` → `três quartos de xícara`.
+Datas com ano (`05/03/2026`) nunca são ambíguas.
 
 ### Unidades
 
@@ -233,14 +248,27 @@ normalize(
 | --- | --- |
 | `normalize(text, options=None)` | texto normalizado (pipeline completa) |
 | `normalize_with_spans(text, options=None)` | `Normalized(text, spans)` com `Span(start, end, original, spoken, kind)` para alinhamento |
-| `normalize_ssml(text, options=None)` | `<speak>` com `<say-as>` e `<break>`; escapa XML |
+| `normalize_ssml(text, options=None)` | `<speak>` com `<break>`; escapa XML. `Options.ssml_mode` controla se as entidades viram palavras faladas (`SsmlMode.NORMALIZED`, padrão) ou tokens originais em `<say-as>` (`SsmlMode.SAY_AS`) |
 | `split_sentences(text, max_chars=None)` | chunks para TTS, respeitando abreviações e decimais |
 | `spell_cardinal`, `spell_number`, `spell_ordinal`, `spell_fraction`, `spell_percentage`, `spell_money`, `spell_roman`, `spell_acronym` | soletração isolada |
 | `parse_spoken_number`, `roman_to_int`, `int_to_roman` | analisadores reversos |
 | `normalize_money`, `normalize_datetime`, `normalize_units`, `normalize_abbreviations`, `normalize_identifiers`, `normalize_web`, `normalize_symbols`, `normalize_emoji`, `normalize_shorthand`, `normalize_ranges`, `describe_emoji`, `split_camel` | helpers por entidade |
 
 `Options` (frozen dataclass): `catorze_style`, `decimal_mode`, `emoji_mode`, `phone_style`,
-`acronym_overrides`, `user_lexicon`, `digit_group_separator`, `roman_context`.
+`acronym_overrides`, `user_lexicon`, `digit_group_separator`, `roman_context`, `ssml_mode`.
+
+### Estratégias SSML
+
+`normalize_ssml` oferece duas estratégias documentadas (nunca se deve colocar uma palavra
+**já falada** dentro de `<say-as>`: o motor a reinterpreta — "trinta e um de dezembro" pode
+virar fração ou outra data):
+
+- `SsmlMode.NORMALIZED` (padrão): emite apenas palavras normalizadas e quebras `<break>`.
+  Use com motores que não implementam SSML ou que leem o texto corrido.
+- `SsmlMode.SAY_AS`: entidades com interpretação declarada levam o **token original** dentro
+  de `<say-as interpret-as="...">` (`date`, `currency`, `digits`, `ordinal`, `cardinal`,
+  `characters`, `time`); o restante continua em palavras faladas. Use com motores que
+  implementam SSML e devem fazer a própria interpretação.
 
 ## CLI
 
@@ -254,7 +282,7 @@ falabr "Um. Dois. Três." --sentences --max-chars 20
 ```
 
 Opções: `-f/--file`, `--json` (spans com `start`/`end` **no texto normalizado**, `original`,
-`spoken`, `kind`), `--ssml`, `--sentences`, `--max-chars`, `--catorze`,
+`spoken`, `kind`), `--ssml`, `--ssml-mode normalized|say-as`, `--sentences`, `--max-chars`, `--catorze`,
 `--decimal-mode cardinal|digits`, `--emoji-mode remove|describe`,
 `--roman-context cardinal|regnal`, `--phone-style digits|pairs|natural`,
 `--digit-group-separator`, `--acronym-override KEY=VALUE` (repetível),
@@ -332,8 +360,9 @@ def falar_elevenlabs(texto: str, api_key: str, voice_id: str) -> None:
 
 ### Azure Speech (SSML)
 
-`normalize_ssml` devolve um `<speak>` com `<say-as>` e `<break>`; basta trocar o nó raiz
-pelo formato do Azure e manter o corpo.
+`normalize_ssml` devolve um `<speak>` com quebras `<break>` (e, em `SsmlMode.SAY_AS`, com
+`<say-as>` contendo os tokens originais); basta trocar o nó raiz pelo formato do Azure e
+manter o corpo.
 
 ```python
 from falabr import normalize_ssml
@@ -352,8 +381,10 @@ def ssml_azure(texto: str, voz: str = "pt-BR-FranciscaNeural") -> str:
 
 # ssml_azure("Paguei R$ 10 em 05/03")
 # '<speak ... xml:lang="pt-BR"><voice name="pt-BR-FranciscaNeural">
-#  Paguei <say-as interpret-as="currency">dez reais</say-as> em
-#  <say-as interpret-as="date">cinco de março</say-as></voice></speak>'
+#  Paguei dez reais em cinco de março</voice></speak>'
+#
+# Com SsmlMode.SAY_AS, o corpo traz <say-as interpret-as="currency">R$ 10</say-as>
+# e <say-as interpret-as="date">05/03</say-as> — nunca palavras já faladas dentro da tag.
 ```
 
 ## Desenvolvimento

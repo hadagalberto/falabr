@@ -15,7 +15,15 @@ import sys
 from collections.abc import Sequence
 
 from .entities import normalize, normalize_ssml, normalize_with_spans, split_sentences
-from .options import CatorzeStyle, DecimalMode, EmojiMode, Options, PhoneStyle, RomanContext
+from .options import (
+    CatorzeStyle,
+    DecimalMode,
+    EmojiMode,
+    Options,
+    PhoneStyle,
+    RomanContext,
+    SsmlMode,
+)
 
 __all__ = ["build_parser", "main"]
 
@@ -60,6 +68,12 @@ def build_parser() -> argparse.ArgumentParser:
         choices=[style.value for style in PhoneStyle],
         default=PhoneStyle.NATURAL.value,
         help="how phone numbers are voiced (digits, pairs or natural)",
+    )
+    parser.add_argument(
+        "--ssml-mode",
+        choices=[mode.value for mode in SsmlMode],
+        default=SsmlMode.NORMALIZED.value,
+        help="SSML strategy: spoken words with breaks, or original tokens in say-as",
     )
     parser.add_argument(
         "--digit-group-separator",
@@ -120,6 +134,7 @@ def _options_from_args(args: argparse.Namespace) -> Options:
         emoji_mode=EmojiMode(args.emoji_mode),
         roman_context=RomanContext(args.roman_context),
         phone_style=PhoneStyle(args.phone_style),
+        ssml_mode=SsmlMode(args.ssml_mode),
         digit_group_separator=args.digit_group_separator,
         acronym_overrides=_parse_pairs(args.acronym_override, "--acronym-override"),
         user_lexicon=_parse_pairs(args.user_lexicon, "--user-lexicon"),

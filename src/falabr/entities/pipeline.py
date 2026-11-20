@@ -17,7 +17,7 @@ from ..numbers import (
     spell_ordinal,
     spell_roman,
 )
-from ..options import Gender, Options, RomanContext
+from ..options import Gender, Options, RomanContext, SsmlMode
 from ._common import (
     MatchContext,
     Matcher,
@@ -29,6 +29,7 @@ from .abbrev import ABBREVIATION_MATCHERS, ABBREVIATIONS, spell_acronym
 from .datetime import DATETIME_MATCHERS
 from .emoji import EMOJI_MATCHERS
 from .identifiers import IDENTIFIER_MATCHERS
+from .measures import MEASURE_FRACTION_MATCHER
 from .money import MONEY_MATCHERS
 from .ranges import RANGE_MATCHERS, SCORE_MATCHERS
 from .shorthand import SHORTHAND_MATCHERS
@@ -142,6 +143,9 @@ _RAW_MATCHERS: Final[tuple[Matcher, ...]] = (
     *IDENTIFIER_MATCHERS,
     # Ranges precede the decade matcher so "anos 10-20" is one range.
     *RANGE_MATCHERS,
+    # Measure fractions ("1/2 xícara", "3/4 de litro") must win over the
+    # short-date matcher, otherwise they are read as dates (1 February, ...).
+    MEASURE_FRACTION_MATCHER,
     *DATETIME_MATCHERS,
     # After the time matcher: "14:30" is a clock, "2:1" is a score.
     *SCORE_MATCHERS,
@@ -270,15 +274,32 @@ def normalize(text: str, options: Options | None = None) -> str:
 
 
 def normalize_ssml(text: str, options: Options | None = None) -> str:
-    """Normalize text and wrap it in <speak> with say-as and sentence breaks."""
-    result = normalize_with_spans(text, options)
+    """Normalize text and wrap it in ``<speak>`` with structural breaks.
+
+    Two strategies are supported (see :class:`~falabr.options.SsmlMode`):
+
+    ``normalized`` (default)
+        Emit fully normalized, already-spoken words and only ``<break>``
+        structure.  Speech engines must never receive spoken words inside a
+        ``<say-as>`` element: they re-interpret them (e.g. "trinta e um de
+        dezembro" can be re-parsed as a fraction or a different date).
+
+    ``say-as``
+        For entities with a declared interpretation, emit the ORIGINAL token
+        inside ``<say-as interpret-as=...>`` so the engine does the parsing.
+        Everything else is still emitted as spoken words.
+    """
+    opts = options if options is not None else Options()
+    result = normalize_with_spans(text, opts)
     pieces: list[str] = []
     cursor = 0
     for span in result.spans:
         pieces.append(escape(result.text[cursor : span.start]))
-        spoken = escape(span.spoken)
         tag = _SAY_AS.get(span.kind)
-        pieces.append(f'<say-as interpret-as="{tag}">{spoken}</say-as>' if tag else spoken)
+        if opts.ssml_mode is SsmlMode.SAY_AS and tag is not None:
+            pieces.append(f'<say-as interpret-as="{tag}">{escape(span.original)}</say-as>')
+        else:
+            pieces.append(escape(span.spoken))
         cursor = span.end
     pieces.append(escape(result.text[cursor:]))
     body = "".join(pieces)

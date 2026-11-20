@@ -23,7 +23,7 @@ RANGE_CASES: tuple[tuple[str, str], ...] = (
 
 NOT_A_RANGE_CASES: tuple[tuple[str, str], ...] = (
     ("10-20", "dez-vinte"),
-    ("3/4", "três quartos"),
+    ("3/4 de xícara", "três quartos de xícara"),
     ("3,14", "três vírgula quatorze"),
     ("2026-03-05", "cinco de março de dois mil e vinte e seis"),
 )

@@ -59,12 +59,16 @@ _WEEKDAYS: Final[dict[str, str]] = {
     "dom": "domingo",
 }
 
-_DATE_WORDS: Final[tuple[str, ...]] = ("dia", "data", "em", "no", "na")
-
 _MONTH_NAMES: Final = "|".join(
     sorted((*[_m.lower() for _m in _MONTHS.values()], *_MONTH_ALIASES), key=len, reverse=True)
 )
 _WEEKDAY_NAMES: Final = "|".join(sorted(_WEEKDAYS, key=len, reverse=True))
+
+# "3/4 de ..." is a quantity cue, not a date.  A following year or part of day
+# ("de 2026", "de manhã") is excluded: those belong to a date phrase.
+_FRACTION_DE_RE: Final = re.compile(
+    r"\s+de\s+(?!(?:\d{4}|manhã|tarde|noite|madrugada)\b)", re.IGNORECASE
+)
 
 
 def _year_words(year_text: str, options: Options) -> str:
@@ -135,16 +139,22 @@ def _short_date(match: re.Match[str], ctx: MatchContext) -> str:
     raw = match.group()
     day_text, month_text = re.split(r"/", raw)
     day, month = int(day_text), int(month_text)
-    before = ctx.text[: match.start()].rstrip().lower()
-    padded = len(day_text) == 2 and day_text.startswith("0")
-    is_date = padded or any(before.endswith(word) for word in _DATE_WORDS)
-    if not is_date:
-        if 1 <= month <= 12:
-            return spell_fraction(day, month)
-        return raw
-    if not _valid(day, month):
-        return raw
-    return _date_words(day, month, None, ctx.options)
+    after = ctx.text[match.end() :]
+    if 2 <= month <= 12 and _FRACTION_DE_RE.match(after):
+        # "3/4 de leite": the existing "de" supplies the preposition.  Known
+        # measure nouns are consumed earlier by the measure_fraction matcher.
+        return spell_fraction(day, month)
+    # A d/m or dd/mm pair is a date whenever it is valid (day 1-31, month
+    # 1-12), regardless of surrounding words.  Recipe and measure expressions
+    # such as "1/2 xícara" are consumed earlier by the measure_fraction
+    # matcher, so they never reach this handler.
+    if _valid(day, month):
+        return _date_words(day, month, None, ctx.options)
+    # Invalid as a date: keep a fraction reading when the denominator allows
+    # one, and otherwise preserve the original token.
+    if 2 <= month <= 12:
+        return spell_fraction(day, month)
+    return raw
 
 
 def _time(match: re.Match[str], ctx: MatchContext) -> str:

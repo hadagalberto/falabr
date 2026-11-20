@@ -14,6 +14,7 @@ from tests import (
     test_emoji_entity,
     test_fractions_money,
     test_identifiers_entity,
+    test_milestone5,
     test_money_entity,
     test_ordinals,
     test_parser,
@@ -81,5 +82,9 @@ def test_hand_written_table_case_count_at_least_600() -> None:
         + len(test_ranges_protocol.NOT_A_SCORE_CASES)
         + len(test_ranges_protocol.PROTOCOL_CASES)
         + len(test_ranges_protocol.NOT_A_PROTOCOL_CASES)
+        + len(test_milestone5.DATE_VS_FRACTION_CASES)
+        + len(test_milestone5.MEASURE_FRACTION_CASES)
+        + len(test_milestone5.GOLDEN_PARAGRAPH_CASES)
+        + len(test_milestone5.SSML_MODE_CASES)
     )
     assert total >= 600, f"expected at least 600 hand-written cases, got {total}"

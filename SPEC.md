@@ -26,7 +26,7 @@ README.md (pt-BR primary) + README.en.md, CHANGELOG, CONTRIBUTING, LICENSE. Do n
 - Units (SI + common: km, km/h, m², kg, ml, °C, GB, Mbps, kWh, mg/dL…) with singular/plural agreement ("1 km" "um quilômetro"; "1,5 km" "um vírgula cinco quilômetros").
 - Abbreviations dictionary (Dr., Dra., Sr., Sra., Prof., Av., R., nº, p.ex., etc., pág., tel., ltda., S.A.) with context rules; acronyms spelled vs read as words (INSS → "i ene esse esse", PIX → "pix", USP read as word) via curated lists + heuristics; user dictionary overrides.
 - URLs, e-mails, @handles, #hashtags (split camelCase), emojis (configurable: remove or describe in pt-BR using a CLDR-derived short-name table with source cited), symbols (&, +, =, %, /, ×).
-- Sentence segmentation for TTS chunks (respect abbreviations and decimals; max chunk length option) and SSML output option (`<say-as>`, `<break>`) with proper escaping.
+- Sentence segmentation for TTS chunks (respect abbreviations and decimals; max chunk length option) and SSML output with proper escaping. Two documented strategies via `ssml_mode`: `normalized` (default — fully spoken words with only `<break>/<s>/<p>` structure; never wrap already-spoken words in `<say-as>`) or `say-as` (emit the ORIGINAL token inside `<say-as interpret-as=...>` for engines that interpret it themselves). A valid bare `dd/mm`/`d/m` is read as a date; a fraction before a measure noun takes agreement/preposition rules (`1/2 xícara` → "meia xícara", `1/3 xícara` → "um terço de xícara").
 
 ## API
 `normalize(text, *, options) -> str`, `normalize_ssml(text, options) -> str`, `spell_number(n, gender, ...)`, `spell_ordinal`, `spell_money`, `split_sentences`;

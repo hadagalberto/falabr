@@ -18,7 +18,7 @@ python -m pip install -e ".[dev]"
 ## Quick start
 
 ```python
-from falabr import Options, PhoneStyle, normalize, normalize_ssml
+from falabr import Options, PhoneStyle, SsmlMode, normalize, normalize_ssml
 
 normalize("Dia 05/03, às 14h30")
 # 'Dia cinco de março, às quatorze horas e trinta minutos'
@@ -27,7 +27,10 @@ normalize("(11) 98765-4321", Options(phone_style=PhoneStyle.NATURAL))
 # 'onze, nove, oito sete seis cinco, quatro três dois um'
 
 normalize_ssml("R$ 10")
-# '<speak><say-as interpret-as="currency">dez reais</say-as></speak>'
+# '<speak>dez reais</speak>'  (default: spoken words, no <say-as>)
+
+normalize_ssml("R$ 10", Options(ssml_mode=SsmlMode.SAY_AS))
+# '<speak><say-as interpret-as="currency">R$ 10</say-as></speak>'
 ```
 
 ## Before / after
@@ -48,8 +51,11 @@ All outputs below are verified by the repository's hand-written table and golden
 | `14` with `catorze_style=catorze` | `catorze` |
 | `21º` | `vigésimo primeiro` |
 | `1000ª` | `milésima` |
-| `3/4` | `três quartos` |
-| `5/12` | `cinco doze avos` |
+| `spell_fraction(3, 4)` | `três quartos` |
+| `spell_fraction(5, 12)` | `cinco doze avos` |
+| `normalize("3/4")` | `três de abril` |
+| `normalize("1/2 xícara")` | `meia xícara` |
+| `normalize("3/4 de xícara")` | `três quartos de xícara` |
 | `12,5%` | `doze vírgula cinco por cento` |
 
 ### Money
@@ -67,6 +73,9 @@ All outputs below are verified by the repository's hand-written table and golden
 | Input | Output |
 | --- | --- |
 | `05/03/2026` | `cinco de março de dois mil e vinte e seis` |
+| `31/12` | `trinta e um de dezembro` |
+| `1/2` | `um de fevereiro` |
+| `12/10` | `doze de outubro` |
 | `2026-03-05` | `cinco de março de dois mil e vinte e seis` |
 | `5 de mar.` | `cinco de março` |
 | `14h30` / `14:30` | `quatorze horas e trinta minutos` |
@@ -74,6 +83,12 @@ All outputs below are verified by the repository's hand-written table and golden
 | `século XXI` | `século vinte e um` |
 | `Dom Pedro II` | `Dom Pedro segundo` |
 | `anos 90` | `anos noventa` |
+
+`dd/mm` and `d/m` are read as a date whenever they form a valid one (day 1–31,
+month 1–12). To force the fraction reading in a recipe/measure context, put a
+measure noun after it: `1/2 xícara` → `meia xícara`, `1/3 de xícara` →
+`um terço de xícara`, `3/4 xícara` → `três quartos de xícara`. Dates with a
+year (`05/03/2026`) are never ambiguous.
 
 ### Units, identifiers, phone styles
 
@@ -126,14 +141,27 @@ A bare hyphen (`10-20`) is not forced into a range; `14:30` remains a clock time
 
 - `normalize(text, options=None) -> str`
 - `normalize_with_spans(text, options=None) -> Normalized` — `Span(start, end, original, spoken, kind)` offsets refer to the **normalized** text, for subtitle/TTS alignment.
-- `normalize_ssml(text, options=None) -> str` — `<speak>` with `<say-as>`/`<break>` and XML escaping.
+- `normalize_ssml(text, options=None) -> str` — `<speak>` with `<break>` and XML escaping. `Options.ssml_mode` selects the strategy: `SsmlMode.NORMALIZED` (default, spoken words only) or `SsmlMode.SAY_AS` (original tokens inside `<say-as>`).
 - `split_sentences(text, max_chars=None) -> list[str]`
 - Spellers: `spell_cardinal`, `spell_number`, `spell_ordinal`, `spell_fraction`, `spell_percentage`, `spell_money`, `spell_roman`, `spell_acronym`.
 - Parsers: `parse_spoken_number`, `roman_to_int`, `int_to_roman`.
 - Entity helpers: `normalize_money`, `normalize_datetime`, `normalize_units`, `normalize_abbreviations`, `normalize_identifiers`, `normalize_web`, `normalize_symbols`, `normalize_emoji`, `normalize_shorthand`, `normalize_ranges`, `describe_emoji`, `split_camel`.
 
 `Options` is a frozen dataclass: `catorze_style`, `decimal_mode`, `emoji_mode`, `phone_style`,
-`acronym_overrides`, `user_lexicon`, `digit_group_separator`, `roman_context`.
+`acronym_overrides`, `user_lexicon`, `digit_group_separator`, `roman_context`, `ssml_mode`.
+
+### SSML strategies
+
+Two documented strategies are available (never put an **already-spoken** word inside
+`<say-as>`: engines re-interpret it — "trinta e um de dezembro" can become a fraction or
+another date):
+
+- `SsmlMode.NORMALIZED` (default): fully spoken words plus `<break>` structure only. Use
+  with engines that do not implement SSML or that consume plain running text.
+- `SsmlMode.SAY_AS`: entities with a declared interpretation carry the **original** token
+  inside `<say-as interpret-as="...">` (`date`, `currency`, `digits`, `ordinal`, `cardinal`,
+  `characters`, `time`); everything else stays spoken. Use with engines that implement
+  SSML and should do the interpretation themselves.
 
 ## CLI
 
@@ -146,7 +174,7 @@ falabr "(11) 98765-4321" --phone-style pairs
 falabr "Um. Dois. Três." --sentences --max-chars 20
 ```
 
-Flags: `-f/--file`, `--json`, `--ssml`, `--sentences`, `--max-chars`, `--catorze`,
+Flags: `-f/--file`, `--json`, `--ssml`, `--ssml-mode normalized|say-as`, `--sentences`, `--max-chars`, `--catorze`,
 `--decimal-mode cardinal|digits`, `--emoji-mode remove|describe`,
 `--roman-context cardinal|regnal`, `--phone-style digits|pairs|natural`,
 `--digit-group-separator`, `--acronym-override KEY=VALUE` (repeatable),

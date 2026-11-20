@@ -7,6 +7,14 @@ All notable changes to this project are documented here. Format follows
 
 ### Added
 
+- Milestone 5: `SsmlMode` (`normalized`/`say-as`) and `Options.ssml_mode`, wired through
+  `normalize_ssml`, the public API and the CLI's `--ssml-mode`. Table tests pin both
+  strategies, including that engines never receive spoken words inside `<say-as>`.
+- Measure-fraction matcher (`1/2 xícara` → "meia xícara", `1/3 de xícara` →
+  "um terço de xícara", `3/4 xícara` → "três quartos de xícara") with feminine/masculine
+  agreement and exact alignment spans.
+- Golden/table vectors for the ambiguous day/month cases (`1/2`, `3/4`, `12/10`, `5/3`,
+  `31/12`) and for the two SSML strategies.
 - Milestone 4 documentation: `README.md` (pt-BR) and `README.en.md` now contain extensive
   before/after tables, the full API/CLI reference, and integration recipes for **Piper**,
   **Coqui XTTS**, **ElevenLabs** and **Azure Speech SSML**. `CONTRIBUTING.md` documents the
@@ -53,12 +61,20 @@ All notable changes to this project are documented here. Format follows
 
 ### Changed
 
+- `normalize_ssml` now defaults to fully normalized spoken words with only `<break>`
+  structure. Use `Options(ssml_mode=SsmlMode.SAY_AS)` (or `--ssml-mode say-as`) for the
+  original-token `<say-as>` behaviour of earlier releases.
 - Phone numbers now default to the `natural` reading; the previous digit-by-digit output
   remains available as `PhoneStyle.DIGITS` and is covered by the original vectors.
 - `--json`, `--ssml` and `--sentences` are mutually exclusive CLI output modes.
 
 ### Fixed
 
+- Bare `dd/mm`/`d/m` pairs are read as dates whenever valid (day 1–31, month 1–12):
+  `até 31/12!` → "até trinta e um de dezembro!" instead of "trinta e um doze avos".
+  Measure contexts are excluded from this rule.
+- Fractions before a noun no longer produce "um meio xícara"; `1/2` uses the agreeing
+  "meia"/"meio" and the other fractions take the "de" preposition.
 - Phone parsing uses the written separators instead of a flat digit string, so 10-digit
   numbers like `(21) 3333-4444` keep their two-digit area code.
 - `split_sentences` abbreviation protection: short entries such as `R.` and `n.` no

@@ -26,6 +26,7 @@ def test_public_exports() -> None:
         "Options",
         "PhoneStyle",
         "RomanContext",
+        "SsmlMode",
         "Span",
         "describe_emoji",
         "int_to_roman",
@@ -67,6 +68,8 @@ def test_defaults() -> None:
     assert CatorzeStyle("catorze") is CatorzeStyle.CATORZE
     assert DecimalMode("digits") is DecimalMode.DIGITS
     assert RomanContext("regnal") is RomanContext.REGNAL
+    assert options.ssml_mode is falabr.SsmlMode.NORMALIZED
+    assert falabr.SsmlMode("say-as") is falabr.SsmlMode.SAY_AS
 
 
 def test_constants() -> None:

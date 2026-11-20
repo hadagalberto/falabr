@@ -5,21 +5,32 @@ from __future__ import annotations
 import pytest
 
 from falabr import normalize_ssml, split_sentences
+from falabr.options import Options, SsmlMode
 
+# Default (normalized): fully spoken words, only <break> structure.  No
+# <say-as> may wrap an already-interpreted word (milestone 5).
 SSML_CASES: tuple[tuple[str, str], ...] = (
-    ("a & b 3", '<speak>a e b <say-as interpret-as="cardinal">três</say-as></speak>'),
-    ("R$ 10", '<speak><say-as interpret-as="currency">dez reais</say-as></speak>'),
+    ("a & b 3", "<speak>a e b três</speak>"),
+    ("R$ 10", "<speak>dez reais</speak>"),
     (
         "123.456.789-09",
-        '<speak><say-as interpret-as="digits">'
-        "um dois três, quatro cinco seis, sete oito nove, zero nove"
-        "</say-as></speak>",
+        "<speak>um dois três, quatro cinco seis, sete oito nove, zero nove</speak>",
     ),
+    ("05/03/2026", "<speak>cinco de março de dois mil e vinte e seis</speak>"),
+    ("palavras", "<speak>palavras</speak>"),
+    ("Chegou. Saiu.", '<speak>Chegou. <break strength="medium"/> Saiu.</speak>'),
+)
+
+# Explicit say-as mode: ORIGINAL token inside the tag, never the spoken words.
+SSML_SAY_AS_CASES: tuple[tuple[str, str], ...] = (
+    ("a & b 3", '<speak>a e b <say-as interpret-as="cardinal">3</say-as></speak>'),
+    ("R$ 10", '<speak><say-as interpret-as="currency">R$ 10</say-as></speak>'),
     (
-        "05/03/2026",
-        '<speak><say-as interpret-as="date">'
-        "cinco de março de dois mil e vinte e seis</say-as></speak>",
+        "123.456.789-09",
+        '<speak><say-as interpret-as="digits">123.456.789-09</say-as></speak>',
     ),
+    ("05/03/2026", '<speak><say-as interpret-as="date">05/03/2026</say-as></speak>'),
+    ("3º lugar", '<speak><say-as interpret-as="ordinal">3º</say-as> lugar</speak>'),
     ("palavras", "<speak>palavras</speak>"),
     ("Chegou. Saiu.", '<speak>Chegou. <break strength="medium"/> Saiu.</speak>'),
 )
@@ -39,6 +50,23 @@ SENTENCE_CASES: tuple[tuple[str, list[str]], ...] = (
 @pytest.mark.parametrize(("source", "expected"), SSML_CASES)
 def test_ssml(source: str, expected: str) -> None:
     assert normalize_ssml(source) == expected
+
+
+@pytest.mark.parametrize(("source", "expected"), SSML_SAY_AS_CASES)
+def test_ssml_say_as_mode(source: str, expected: str) -> None:
+    options = Options(ssml_mode=SsmlMode.SAY_AS)
+    assert normalize_ssml(source, options) == expected
+
+
+def test_ssml_modes_are_explicit_and_different() -> None:
+    text = "até 31/12, R$ 10 e 3º lugar"
+    normalized = normalize_ssml(text)
+    say_as = normalize_ssml(text, Options(ssml_mode=SsmlMode.SAY_AS))
+    assert "<say-as" not in normalized
+    assert "trinta e um de dezembro" in normalized
+    assert "<say-as" in say_as
+    assert "31/12" in say_as
+    assert "trinta e um de dezembro" not in say_as
 
 
 def test_ssml_escapes_special_characters() -> None:

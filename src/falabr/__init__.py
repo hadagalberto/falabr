@@ -117,6 +117,9 @@ from .options import (
 from .options import (
     RomanContext as RomanContext,
 )
+from .options import (
+    SsmlMode as SsmlMode,
+)
 
 __all__ = [
     "ABBREVIATIONS",
@@ -131,6 +134,7 @@ __all__ = [
     "PhoneStyle",
     "RomanContext",
     "Span",
+    "SsmlMode",
     "describe_emoji",
     "int_to_roman",
     "normalize",

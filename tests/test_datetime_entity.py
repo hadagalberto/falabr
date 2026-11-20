@@ -19,8 +19,12 @@ DATE_CASES: tuple[tuple[str, str], ...] = (
     ("05/03", "cinco de março"),
     ("dia 5/3", "dia cinco de março"),
     ("data 5/3", "data cinco de março"),
-    ("3/4", "três quartos"),
-    ("5/3", "cinco terços"),
+    # A bare d/m pair is read as a date whenever it is valid (milestone 5).
+    ("31/12", "trinta e um de dezembro"),
+    ("1/2", "um de fevereiro"),
+    ("3/4", "três de abril"),
+    ("12/10", "doze de outubro"),
+    ("5/3", "cinco de março"),
 )
 
 TIME_CASES: tuple[tuple[str, str], ...] = (

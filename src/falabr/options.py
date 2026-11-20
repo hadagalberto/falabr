@@ -62,6 +62,23 @@ class PhoneStyle(str, Enum):
     NATURAL = "natural"
 
 
+class SsmlMode(str, Enum):
+    """SSML generation strategy for :func:`falabr.normalize_ssml`.
+
+    ``NORMALIZED`` (the default) emits fully normalized, already-spoken words
+    with only ``<break>`` structure.  Speech engines must never be handed
+    spoken words inside ``<say-as>``: they re-interpret them (for example,
+    "trinta e um de dezembro" can be re-parsed as a date or a fraction).
+
+    ``SAY_AS`` keeps the ORIGINAL token inside ``<say-as interpret-as=...>`` so
+    engines that implement SSML can do the interpretation themselves.  Text
+    that has no declared interpretation is still emitted as spoken words.
+    """
+
+    NORMALIZED = "normalized"
+    SAY_AS = "say-as"
+
+
 @dataclass(frozen=True, slots=True)
 class Options:
     """Immutable bundle of normalization options."""
@@ -74,6 +91,7 @@ class Options:
     digit_group_separator: str = ","
     roman_context: RomanContext = RomanContext.CARDINAL
     phone_style: PhoneStyle = PhoneStyle.NATURAL
+    ssml_mode: SsmlMode = SsmlMode.NORMALIZED
 
     def __post_init__(self) -> None:
         if not isinstance(self.catorze_style, CatorzeStyle):
@@ -86,6 +104,8 @@ class Options:
             raise TypeError("roman_context must be a RomanContext")
         if not isinstance(self.phone_style, PhoneStyle):
             raise TypeError("phone_style must be a PhoneStyle")
+        if not isinstance(self.ssml_mode, SsmlMode):
+            raise TypeError("ssml_mode must be a SsmlMode")
         for name in ("acronym_overrides", "user_lexicon"):
             value = getattr(self, name)
             if not isinstance(value, Mapping):

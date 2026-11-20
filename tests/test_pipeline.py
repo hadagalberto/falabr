@@ -14,7 +14,7 @@ PIPELINE_CASES: tuple[tuple[str, str], ...] = (
     ("12,5%", "doze vírgula cinco por cento"),
     ("3º lugar", "terceiro lugar"),
     ("1ª colocada", "primeira colocada"),
-    ("R$ 10 e 3/4", "dez reais e três quartos"),
+    ("R$ 10 e 3/4 de xícara", "dez reais e três quartos de xícara"),
     ("Dr. Silva: 14h30", "doutor Silva: quatorze horas e trinta minutos"),
     ("CPF 123.456.789-09", "cê pê efe um dois três, quatro cinco seis, sete oito nove, zero nove"),
     ("O INSS pagou o PIX", "O i ene esse esse pagou o pix"),
