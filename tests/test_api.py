@@ -15,15 +15,33 @@ from falabr import (
 
 def test_public_exports() -> None:
     expected = {
+        "ABBREVIATIONS",
+        "CLDR_SOURCE",
         "MAX_CARDINAL",
         "CatorzeStyle",
         "DecimalMode",
+        "EmojiMode",
         "Gender",
+        "Normalized",
         "Options",
         "RomanContext",
+        "Span",
+        "describe_emoji",
         "int_to_roman",
+        "normalize",
+        "normalize_abbreviations",
+        "normalize_datetime",
+        "normalize_emoji",
+        "normalize_identifiers",
+        "normalize_money",
+        "normalize_ssml",
+        "normalize_symbols",
+        "normalize_units",
+        "normalize_web",
+        "normalize_with_spans",
         "parse_spoken_number",
         "roman_to_int",
+        "spell_acronym",
         "spell_cardinal",
         "spell_fraction",
         "spell_money",
@@ -31,6 +49,8 @@ def test_public_exports() -> None:
         "spell_ordinal",
         "spell_percentage",
         "spell_roman",
+        "split_camel",
+        "split_sentences",
     }
     assert set(falabr.__all__) == expected
     for name in expected:

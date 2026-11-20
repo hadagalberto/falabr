@@ -3,6 +3,24 @@
 All notable changes to this project are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+### Added
+
+- Milestone 2 entities and the composed `normalize` pipeline: money (symbols, cents,
+  mi/bi/mil abbreviations, `de` rule, all four currencies), dates/times in every listed
+  format, weekdays, decades and centuries, units with gender/number agreement, an
+  abbreviation dictionary with context rules, curated acronym word/spell lists plus
+  user overrides, grouped digit reading for CPF/CNPJ/CEP/phone/card, URLs, e-mails,
+  handles, camelCase hashtags, symbols, and CLDR-derived pt-BR emoji names with the
+  source cited.
+- `normalize_ssml` (say-as + sentence breaks), `normalize_with_spans` for TTS alignment,
+  `split_sentences` (abbreviation/decimal aware, optional max chunk length), and the
+  frozen `Options` fields `emoji_mode`, `acronym_overrides`, `user_lexicon` and
+  `digit_group_separator`.
+- 345 additional hand-written table cases across the new entity modules, plus pipeline,
+  SSML and sentence tests.
+
 ## [0.1.0] — 2026-11-20
 
 ### Added

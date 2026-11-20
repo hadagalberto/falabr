@@ -154,6 +154,9 @@ _CURRENCIES: Final[dict[str, tuple[str, str]]] = {
     "GBP": ("libra", "libras"),
 }
 
+# "libra" is feminine in pt-BR; the other currency nouns here are masculine.
+_CURRENCY_GENDER: Final[dict[str, Gender]] = {"GBP": "f"}
+
 _ROMAN_VALUES: Final[dict[str, int]] = {
     "I": 1,
     "V": 5,
@@ -498,7 +501,8 @@ def spell_money(
         core = f"{spell_cardinal(integer, catorze_style=opts.catorze_style)} de {plural}"
     else:
         noun = singular if integer == 1 else plural
-        core = f"{spell_cardinal(integer, catorze_style=opts.catorze_style)} {noun}"
+        gender = _CURRENCY_GENDER.get(code, "m")
+        core = f"{spell_cardinal(integer, gender=gender, catorze_style=opts.catorze_style)} {noun}"
 
     if cents:
         cent_noun = "centavo" if cents == 1 else "centavos"

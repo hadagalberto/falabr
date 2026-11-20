@@ -6,10 +6,11 @@ um locutor falaria.
 
 > `"R$ 1.234,56"` → "mil duzentos e trinta e quatro reais e cinquenta e seis centavos"
 
-Este é o **Marco 1**: números por extenso (cardinais, ordinais, frações, porcentagens,
+O **Marco 1** implementa números por extenso (cardinais, ordinais, frações, porcentagens,
 decimais, dinheiro e numerais romanos) e o analisador reverso `parse_spoken_number`.
-As entidades de texto completo (datas, moedas em contexto, URLs, SSML etc.) vêm nos marcos
-seguintes — veja `SPEC.md`.
+O **Marco 2** adiciona as entidades de texto completo e o pipeline `normalize`: moedas,
+datas/horas, décadas/séculos, unidades, abreviações e siglas, códigos (CPF/CNPJ/CEP/
+telefone/cartão), URLs/e-mails/@handles/#hashtags, símbolos e emojis. Veja `SPEC.md`.
 
 ## Instalação
 
@@ -53,6 +54,30 @@ spell_roman("XXI")  # 'vinte e um'  (século XXI)
 spell_roman("II", context="regnal")  # 'segundo'     (Dom Pedro II)
 parse_spoken_number("dois mil e trinta")  # 2030
 ```
+
+### Pipeline de entidades (Marco 2)
+
+```python
+from falabr import EmojiMode, Options, normalize, normalize_ssml, split_sentences
+
+normalize("R$ 1.234,56")  # 'mil duzentos e trinta e quatro reais e cinquenta e seis centavos'
+normalize("Dia 05/03, às 14h30")  # 'Dia cinco de março, às quatorze horas e trinta minutos'
+normalize("Dr. Silva: 14h30")  # 'doutor Silva: quatorze horas e trinta minutos'
+normalize("CPF 123.456.789-09")  # 'cê pê efe um dois três, quatro cinco seis, ...'
+normalize("São 1,5 km")  # 'São um vírgula cinco quilômetros'
+normalize("#BomDia @JoaoSilva")  # 'hashtag bom dia arroba joao silva'
+normalize("Parabéns 🎉", Options(emoji_mode=EmojiMode.DESCRIBE))  # 'Parabéns festa'
+normalize("O INSS", Options(acronym_overrides={"INSS": "word"}))  # 'O inss'
+normalize("Pix", Options(user_lexicon={"Pix": "PIX"}))  # 'PIX'
+normalize_ssml("R$ 10")  # '<speak><say-as interpret-as="currency">dez reais</say-as></speak>'
+split_sentences("Dr. Silva chegou. Sra. Maria saiu.")
+# ['Dr. Silva chegou.', 'Sra. Maria saiu.']
+```
+
+Helpers por entidade: `normalize_money`, `normalize_datetime`, `normalize_units`,
+`normalize_abbreviations`, `spell_acronym`, `normalize_identifiers`, `normalize_web`,
+`normalize_symbols`, `normalize_emoji`, `describe_emoji`, `normalize_with_spans` e
+`split_camel`. Os nomes curtos de emojis vêm da tabela CLDR pt-BR (fonte em `CLDR_SOURCE`).
 
 ### Regras gramaticais
 

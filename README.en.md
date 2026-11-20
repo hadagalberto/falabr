@@ -7,7 +7,10 @@ voice-overs. Turns written pt-BR into what a narrator would actually say.
 vs `cento`, gender, the `de` rule), negatives, decimals (cardinal and digit-by-digit modes),
 the `catorze`/`quatorze` option, ordinals (m/f), fractions, percentages, money, roman
 numerals with regnal/century conventions, and `parse_spoken_number` with a round-trip
-property test. See `SPEC.md` for the full roadmap.
+property test. **Milestone 2** adds all text entities (money, dates/times, decades/centuries,
+units, abbreviations/acronyms, identifiers, web tokens, symbols, CLDR emoji names) and the
+composed `normalize` / `normalize_ssml` / `normalize_with_spans` / `split_sentences` API.
+See `SPEC.md` for the full roadmap.
 
 Zero runtime dependencies, typed for `mypy --strict`, linted with `ruff`, tested with
 `pytest` + `hypothesis` and ≥ 95% branch coverage.
